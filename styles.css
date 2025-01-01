@@ -63,15 +63,52 @@ nav {
   overflow: scroll;
 }
 
-nav a {
+nav a,
+button {
   color: var(--main-font-color);
   margin: 0 1rem;
   text-decoration: none;
   font-weight: bold;
 }
 
-nav a:hover {
+nav a:hover,
+button:hover {
   text-decoration: underline;
+}
+
+.activities-dropdown {
+  float: left;
+  margin: 0 1rem;
+}
+
+.activities-dropdown .dropbtn {
+  font-size: inherit;
+  border: none;
+  outline: none;
+  background-color: inherit;
+  font-family: inherit; /* Important for vertical align on mobile phones */
+  margin: 0; /* Important for vertical align on mobile phones */
+}
+
+.activities-dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: var(--main-blue);
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+
+  a {
+    float: none;
+    color: black;
+    padding: 12px 16px;
+    display: block;
+    text-align: left;
+  }
+}
+
+.activities-dropdown:hover .activities-dropdown-content {
+  display: block;
 }
 
 main {
