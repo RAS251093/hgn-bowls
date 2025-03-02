@@ -4,54 +4,149 @@ import { SITE_TITLE } from '../consts';
 ---
 
 <header>
-	<nav>
-		<h2><a href="/">{SITE_TITLE}</a></h2>
-		<div class="internal-links">
-			<HeaderLink href="/">Home</HeaderLink>
-			<HeaderLink href="/events">Events</HeaderLink>
-			<HeaderLink href="/blog">News</HeaderLink>
-			<HeaderLink href="/about">About</HeaderLink>
-		</div>
-	</nav>
+    <div class="header-content">
+        <div class="burger-container">
+            <button class="burger-menu" id="burger-menu" aria-label="Toggle navigation">&#9776;</button>
+        </div>
+        <div class="mobile-title">
+            <h2><a href="/">{SITE_TITLE}</a></h2>
+        </div>
+    </div>
+    <nav>
+		<h2 class="desktop-title"><a href="/">{SITE_TITLE}</a></h2>
+        <div class="internal-links">
+            <HeaderLink href="/">Home</HeaderLink>
+            <HeaderLink href="/events">Events</HeaderLink>
+            <HeaderLink href="/blog">News</HeaderLink>
+            <HeaderLink href="/about">About</HeaderLink>
+        </div>
+    </nav>
 </header>
-<style>
-	header {
-		margin: 0;
-		padding: 0 1em;
-		background: white;
-		box-shadow: 0 2px 8px rgba(var(--black), 5%);
-	}
-	h2 {
-		margin: 0;
-		font-size: 1em;
-	}
 
-	h2 a,
-	h2 a.active {
-		text-decoration: none;
-	}
-	nav {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-	}
-	nav a {
-		padding: 1em 0.5em;
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const burgerMenu = document.getElementById('burger-menu');
+        const nav = document.querySelector('nav');
+
+        if (burgerMenu && nav) {
+            burgerMenu.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('Burger menu clicked');
+                nav.classList.toggle('active');
+            });
+        }
+    });
+</script>
+
+<style>
+    header {
+        position: relative;
+        margin: 0;
+        background: white;
+        box-shadow: 0 2px 8px rgba(var(--black), 5%);
+		padding: 0 1em;
+    }
+	header a {
 		color: var(--black);
-		border-bottom: 4px solid transparent;
-		text-decoration: none;
 	}
-	nav a.active {
-		text-decoration: none;
-		border-bottom-color: var(--accent);
+	header a.active {
+		color: var(--accent);
 	}
-	.social-links,
-	.social-links a {
-		display: flex;
-	}
-	@media (max-width: 720px) {
-		.social-links {
+    .header-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+    .burger-container {
+        position: absolute;
+        left: 0;
+    }
+    .mobile-title {
+		display: none;
+    }
+    h2 {
+        margin: 0;
+        font-size: 1em;
+    }
+
+    h2 a,
+    h2 a.active {
+        text-decoration: none;
+    }
+    nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    nav a {
+        padding: 1em 0.5em;
+        color: var(--black);
+        border-bottom: 4px solid transparent;
+        text-decoration: none;
+    }
+    nav a.active {
+        text-decoration: none;
+        border-bottom-color: var(--accent);
+    }
+    .social-links,
+    .social-links a {
+        display: flex;
+    }
+    .burger-menu {
+        display: none;
+		margin-bottom: 0.25rem;
+        font-size: 2rem;
+        background: none;
+        border: none;
+        cursor: pointer;
+        z-index: 10;
+    }
+    @media (max-width: 720px) {
+		header {
+			padding: 1em;
+		}
+        .header-content {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+        .burger-container {
+            position: absolute;
+            left: 90%;
+        }
+		.mobile-title {
+			display: block;
+        	text-align: center;
+
+    	}
+		.desktop-title {
 			display: none;
 		}
-	}
+        .burger-menu {
+            display: block;
+            font-size: 1.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        nav {
+            display: none;
+        }
+        nav.active {
+            display: block;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background: white;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .internal-links {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+    }
 </style>
