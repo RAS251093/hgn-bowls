@@ -1,0 +1,21 @@
+---
+import Layout from '../layouts/BlogPost.astro';
+---
+
+<Layout
+	title="Events Calendar"
+	description="Find out about the latest events at Hough Green Park Bowls Club."
+	pubDate={new Date('March 02 2025')}
+	heroImage="/blog-placeholder-about.jpg"
+>
+<section id="events-calendar">
+    <div class="calendar-container">
+      <iframe
+        src="https://calendar.google.com/calendar/embed?src=4b13eeb3eb7dc7777ac193144fe1192c5ac182e82d018a9e35cf94d4788b5e3e%40group.calendar.google.com&ctz=Europe%2FLondon"
+        style="border: 0"
+        width="800"
+        height="600"
+      ></iframe>
+    </div>
+  </section>
+</Layout>

@@ -1,0 +1,29 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1>Hough Green Park Bowls</h1>
+			<p>
+				Welcome to the official Hough Green Park Bowls Club website. 
+				Our club is located in the centre of Hough Green Park and we are always looking for new members to join us. 
+				We have a friendly and welcoming atmosphere, and we cater for bowlers of all ages and abilities.
+			</p>
+			<p>
+				With a full programme of events throughout the year, including friendly matches, club competitions, and social events, 
+				we are always looking for new members to join us!
+			</p>
+		</main>
+		<Footer />
+	</body>
+</html>
