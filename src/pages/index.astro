@@ -13,17 +13,48 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 	<body>
 		<Header />
 		<main>
-			<h1>Hough Green Park Bowls</h1>
-			<p>
-				Welcome to the official Hough Green Park Bowls Club website. 
-				Our club is located in the centre of Hough Green Park and we are always looking for new members to join us. 
-				We have a friendly and welcoming atmosphere, and we cater for bowlers of all ages and abilities.
-			</p>
-			<p>
-				With a full programme of events throughout the year, including friendly matches, club competitions, and social events, 
-				we are always looking for new members to join us!
-			</p>
+			<section class="intro">
+				<h1>Hough Green Park Bowls</h1>
+				<p>
+					Welcome to the official Hough Green Park Bowls Club website.
+					Our club is located in the centre of Hough Green Park and we are always looking for new members to join us.
+					We have a friendly and welcoming atmosphere, and we cater for bowlers of all ages and abilities.
+				</p>
+				<p>
+					With a full programme of events throughout the year, including friendly matches, club competitions, and social events,
+					we are always looking for new members to join us!
+				</p>
+			</section>
+
+			<section class="where-to-find-us">
+				<h2>Where to Find Us</h2>
+				<div class="map-container">
+					<div class="map">
+						<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2380.5381967176654!2d-2.7745466999999997!3d53.369419199999996!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x487b1dbe762b23a1%3A0x93b28572872303c4!2sHough%20Green%20Bowls%20Club!5e0!3m2!1sen!2suk!4v1741033667567!5m2!1sen!2suk"
+						width="400"
+						height="300"
+						style="border:0;"
+						allowfullscreen=""
+						loading="lazy"
+						referrerpolicy="no-referrer-when-downgrade">
+					</iframe>
+				</div>
+				<p>
+					Our club is located in the centre of Hough Green Park, just off Ditchfield Road in Widnes.
+					We are easily accessible by car, bus, or on foot.
+					</p>
+				</div>
+			</section>
 		</main>
 		<Footer />
 	</body>
 </html>
+
+<style>
+	.map-container {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}	
+
+</style>
