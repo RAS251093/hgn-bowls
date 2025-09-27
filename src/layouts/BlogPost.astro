@@ -59,7 +59,16 @@ const { title, description, pubDate, updatedDate, heroImage, altText } =
 		<main>
 			<article>
 				<div class="hero-image">
-					{heroImage && <img width={700} height={510} src={heroImage} alt={altText} />}
+					{
+						heroImage && (
+							<img
+								width={700}
+								height={510}
+								src={heroImage}
+								alt={altText}
+							/>
+						)
+					}
 				</div>
 				<div class="prose">
 					<div class="title">
