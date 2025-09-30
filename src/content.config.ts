@@ -11,6 +11,31 @@ interface Post {
 	altText: string[] | string;
 }
 
+const query = {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    query: `
+    {
+    posts {
+          title
+          description
+          slug
+          pubDate
+          body {
+            markdown
+          }
+          altText
+          assets {
+            id
+            fileName
+            url
+          }
+        }
+          }`,
+  }),
+};
+
 const client = new GraphQLClient(import.meta.env.HYGRAPH_ENDPOINT);
 
 const posts = defineCollection({
@@ -34,33 +59,17 @@ const posts = defineCollection({
       ).optional()
   }),
   loader: async () => {
-    const res = await client.request<{ posts: Post[] }>(`
-      query Posts {
-        posts {
-          title
-          description
-          slug
-          pubDate
-          body {
-            markdown
-          }
-          altText
-          assets {
-            id
-            fileName
-            url
-          }
-        }
-      }`);
+    const res = await fetch(import.meta.env.HYGRAPH_ENDPOINT, query);
+    if (!res) {
+      console.error("No posts returned from CMS");
+      return [];
+    }
+    const json = await res.json();
 
-      if (!res.posts) {
-        console.error("No posts returned from CMS");
-        return [];
-      }
-      return res.posts.map(post => ({
-        id: post.slug,
-        ...post,
-      }));
+    return json.data.posts.map(post => ({
+      id: post.slug,
+      ...post,
+    }));
   },
 });
 
