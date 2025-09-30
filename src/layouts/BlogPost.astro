@@ -4,10 +4,9 @@ import BaseHead from "../components/BaseHead.astro";
 import Footer from "../components/Footer.astro";
 import Header from "../components/Header.astro";
 
-type Props = CollectionEntry<"blog">["data"];
+type Props = CollectionEntry<"posts">["data"];
 
-const { title, description, pubDate, updatedDate, heroImage, altText } =
-	Astro.props;
+const { title, description, altText, assets } = Astro.props;
 ---
 
 <html lang="en">
@@ -60,12 +59,12 @@ const { title, description, pubDate, updatedDate, heroImage, altText } =
 			<article>
 				<div class="hero-image">
 					{
-						heroImage && (
+						assets[0] && (
 							<img
 								width={700}
 								height={510}
-								src={heroImage}
-								alt={altText}
+								src={assets[0]}
+								alt={altText[0]}
 							/>
 						)
 					}
