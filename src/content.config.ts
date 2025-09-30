@@ -2,13 +2,13 @@ import { defineCollection, z } from "astro:content";
 import { GraphQLClient } from "graphql-request";
 
 interface Post {
-  title: string;
-  slug: string;
-  pubDate: string;
-  body?: { text?: string };
-  assets?: { id?: string }[];
-  description?: string;
-  altText?: string[] | string;
+	title: string;
+	slug: string;
+	pubDate: string;
+	body?: { text?: string };
+	assets?: { id?: string }[];
+	description?: string;
+	altText?: string[] | string;
 }
 
 const client = new GraphQLClient(import.meta.env.HYGRAPH_ENDPOINT);

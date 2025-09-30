@@ -6,14 +6,18 @@ import HeaderLink from "./HeaderLink.astro";
 <header>
     <div class="header-content">
         <div class="burger-container">
-            <button class="burger-menu" id="burger-menu" aria-label="Toggle navigation">&#9776;</button>
+            <button
+                class="burger-menu"
+                id="burger-menu"
+                aria-label="Toggle navigation">&#9776;</button
+            >
         </div>
         <div class="mobile-title">
             <h2><a href="/">{SITE_TITLE}</a></h2>
         </div>
     </div>
     <nav>
-		<h2 class="desktop-title"><a href="/">{SITE_TITLE}</a></h2>
+        <h2 class="desktop-title"><a href="/">{SITE_TITLE}</a></h2>
         <div class="internal-links">
             <HeaderLink href="/">Home</HeaderLink>
             <HeaderLink href="/events">Events</HeaderLink>
@@ -24,15 +28,14 @@ import HeaderLink from "./HeaderLink.astro";
 </header>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const burgerMenu = document.getElementById('burger-menu');
-        const nav = document.querySelector('nav');
+    document.addEventListener("DOMContentLoaded", () => {
+        const burgerMenu = document.getElementById("burger-menu");
+        const nav = document.querySelector("nav");
 
         if (burgerMenu && nav) {
-            burgerMenu.addEventListener('click', (e) => {
+            burgerMenu.addEventListener("click", (e) => {
                 e.preventDefault();
-                console.log('Burger menu clicked');
-                nav.classList.toggle('active');
+                nav.classList.toggle("active");
             });
         }
     });
@@ -44,14 +47,14 @@ import HeaderLink from "./HeaderLink.astro";
         margin: 0;
         background: white;
         box-shadow: 0 2px 8px rgba(var(--black), 5%);
-		padding: 0 1em;
+        padding: 0 1em;
     }
-	header a {
-		color: var(--black);
-	}
-	header a.active {
-		color: var(--accent);
-	}
+    header a {
+        color: var(--black);
+    }
+    header a.active {
+        color: var(--accent);
+    }
     .header-content {
         display: flex;
         align-items: center;
@@ -63,7 +66,7 @@ import HeaderLink from "./HeaderLink.astro";
         left: 0;
     }
     .mobile-title {
-		display: none;
+        display: none;
     }
     h2 {
         margin: 0;
@@ -95,7 +98,7 @@ import HeaderLink from "./HeaderLink.astro";
     }
     .burger-menu {
         display: none;
-		margin-bottom: 0.25rem;
+        margin-bottom: 0.25rem;
         font-size: 2rem;
         background: none;
         border: none;
@@ -103,9 +106,9 @@ import HeaderLink from "./HeaderLink.astro";
         z-index: 10;
     }
     @media (max-width: 720px) {
-		header {
-			padding: 1em;
-		}
+        header {
+            padding: 1em;
+        }
         .header-content {
             display: flex;
             align-items: center;
@@ -115,14 +118,13 @@ import HeaderLink from "./HeaderLink.astro";
             position: absolute;
             left: 90%;
         }
-		.mobile-title {
-			display: block;
-        	text-align: center;
-
-    	}
-		.desktop-title {
-			display: none;
-		}
+        .mobile-title {
+            display: block;
+            text-align: center;
+        }
+        .desktop-title {
+            display: none;
+        }
         .burger-menu {
             display: block;
             font-size: 1.5rem;
