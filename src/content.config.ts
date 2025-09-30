@@ -1,5 +1,4 @@
 import { defineCollection, z } from "astro:content";
-import { GraphQLClient } from "graphql-request";
 
 interface Post {
 	title: string;
@@ -35,8 +34,6 @@ const query = {
           }`,
   }),
 };
-
-const client = new GraphQLClient(import.meta.env.HYGRAPH_ENDPOINT);
 
 const posts = defineCollection({
   schema: z.object({
