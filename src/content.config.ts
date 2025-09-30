@@ -1,5 +1,17 @@
 import { defineCollection, z } from "astro:content";
-import { glob } from "astro/loaders";
+import { GraphQLClient } from "graphql-request";
+
+interface Post {
+  title: string;
+  slug: string;
+  pubDate: string;
+  body?: { text?: string };
+  assets?: { id?: string }[];
+  description?: string;
+  altText?: string[] | string;
+}
+
+const client = new GraphQLClient(import.meta.env.HYGRAPH_ENDPOINT);
 
 const blog = defineCollection({
 	// Load Markdown and MDX files in the `src/content/blog/` directory.
