@@ -31,7 +31,7 @@ const posts = defineCollection({
           fileName: z.string(),
           url: z.string()
         })
-      )
+      ).optional()
   }),
   loader: async () => {
     const res = await client.request<{ posts: Post[] }>(`

@@ -7,6 +7,20 @@ import Header from "../components/Header.astro";
 type Props = CollectionEntry<"posts">["data"];
 
 const { title, description, altText, assets } = Astro.props;
+
+// Add placeholder images array
+const placeholderImgs = [
+	"/blog-placeholder-2.jpg",
+	"/blog-placeholder-3.jpg",
+	"/blog-placeholder-4.jpg",
+	"/blog-placeholder-5.jpg",
+];
+
+// Function to get random placeholder image
+const getRandomPlaceholder = () => {
+	const randomIndex = Math.floor(Math.random() * placeholderImgs.length);
+	return placeholderImgs[randomIndex];
+};
 ---
 
 <html lang="en">
@@ -63,8 +77,8 @@ const { title, description, altText, assets } = Astro.props;
 							<img
 								width={700}
 								height={510}
-								src={assets[0].url}
-								alt={altText[0]}
+								src={assets?.[0]?.url ?? getRandomPlaceholder()}
+								alt={altText?.[0] ?? "Blog post thumbnail"}
 							/>
 						) : (
 							<img
