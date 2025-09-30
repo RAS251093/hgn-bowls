@@ -59,12 +59,19 @@ const { title, description, altText, assets } = Astro.props;
 			<article>
 				<div class="hero-image">
 					{
-						assets[0] && (
+						assets ? (
 							<img
 								width={700}
 								height={510}
-								src={assets[0]}
+								src={assets[0].url}
 								alt={altText[0]}
+							/>
+						) : (
+							<img
+								width={700}
+								height={510}
+								src="/public/blog-placeholder-2.jpg"
+								alt="placeholder image"
 							/>
 						)
 					}

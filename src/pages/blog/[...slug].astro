@@ -1,6 +1,7 @@
 ---
 import { getCollection } from "astro:content";
 import BlogPost from "../../layouts/BlogPost.astro";
+import { Markdown } from "@astropub/md";
 
 export async function getStaticPaths() {
 	const posts = await getCollection("posts");
@@ -14,5 +15,5 @@ const post = Astro.props;
 ---
 
 <BlogPost {...post.data}>
-	<div>{post.data.body.text}</div>
+	<Markdown of={post.data.body.markdown} />
 </BlogPost>

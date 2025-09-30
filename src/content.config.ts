@@ -5,10 +5,10 @@ interface Post {
 	title: string;
 	slug: string;
 	pubDate: string;
-	body?: { text?: string };
-	assets?: { id?: string }[];
-	description?: string;
-	altText?: string[] | string;
+	body: { raw: JSON };
+	assets: { id: string }[];
+	description: string;
+	altText: string[] | string;
 }
 
 const client = new GraphQLClient(import.meta.env.HYGRAPH_ENDPOINT);
@@ -16,17 +16,21 @@ const client = new GraphQLClient(import.meta.env.HYGRAPH_ENDPOINT);
 const posts = defineCollection({
   schema: z.object({
       title: z.string(),
+      description: z.string(),
       slug: z.string(),
       pubDate: z.string(),
       body: z.object({
-        text: z.string()
+        markdown: z.string()
       }),
-      description: z.string(),
       altText: z.array(
        z.string()
       ),
       assets: z.array(
-        z.string()
+        z.object({
+          id: z.string(),
+          fileName: z.string(),
+          url: z.string()
+        })
       )
   }),
   loader: async () => {
@@ -34,15 +38,17 @@ const posts = defineCollection({
       query Posts {
         posts {
           title
+          description
           slug
           pubDate
           body {
-            text
+            markdown
           }
-          description
           altText
           assets {
             id
+            fileName
+            url
           }
         }
       }`);
@@ -51,7 +57,6 @@ const posts = defineCollection({
         console.error("No posts returned from CMS");
         return [];
       }
-      console.log(res)
       return res.posts.map(post => ({
         id: post.slug,
         ...post,
