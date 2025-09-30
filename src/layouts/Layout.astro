@@ -1,16 +1,26 @@
 ---
 import BaseHead from "../components/BaseHead.astro";
-import Footer from "../components/Footer.astro";
 import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import { Image } from "astro:assets";
+import { SITE_TITLE } from "../consts";
+
+// Import default hero image
+import defaultHero from "../assets/blog-placeholder-2.jpg";
 
 interface Props {
-    title: string;
-    description: string;
-    heroImage: string;
-    altText: string;
+    title?: string;
+    description?: string;
+    heroImage?: ImageMetadata;
+    altText?: string;
 }
 
-const { title, description, heroImage, altText } = Astro.props;
+const {
+    title = SITE_TITLE,
+    description = "",
+    heroImage = defaultHero as ImageMetadata,
+    altText = "Default hero image",
+} = Astro.props;
 ---
 
 <html lang="en">
@@ -56,19 +66,19 @@ const { title, description, heroImage, altText } = Astro.props;
             }
         </style>
     </head>
-
     <body>
         <Header />
         <main>
             <article>
                 <div class="hero-image">
                     {
-                        heroImage && (
-                            <img
+                        (
+                            <Image
+                                src={heroImage}
                                 width={700}
                                 height={510}
-                                src={heroImage}
                                 alt={altText}
+                                class="hero-img"
                             />
                         )
                     }
