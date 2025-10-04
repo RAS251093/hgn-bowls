@@ -1,5 +1,9 @@
 import { defineCollection, z } from "astro:content";
 
+if (!import.meta.env.HYGRAPH_ENDPOINT) {
+  throw new Error('HYGRAPH_ENDPOINT environment variable is not set');
+}
+
 interface Post {
 	title: string;
 	slug: string;
@@ -63,7 +67,7 @@ const posts = defineCollection({
     }
     const json = await res.json();
 
-    return json.data.posts.map(post => ({
+    return json.data.posts.map((post: Post) => ({
       id: post.slug,
       ...post,
     }));
