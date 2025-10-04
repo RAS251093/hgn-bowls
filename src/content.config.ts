@@ -1,17 +1,13 @@
 import { defineCollection, z } from "astro:content";
 
-if (!import.meta.env.HYGRAPH_ENDPOINT) {
-  throw new Error('HYGRAPH_ENDPOINT environment variable is not set');
-}
-
 interface Post {
-	title: string;
-	slug: string;
-	pubDate: string;
-	body: { raw: JSON };
-	assets: { id: string }[];
-	description: string;
-	altText: string[] | string;
+  title: string;
+  slug: string;
+  pubDate: string;
+  body: { raw: JSON };
+  assets: { id: string }[];
+  description: string;
+  altText: string[] | string;
 }
 
 const query = {
@@ -35,42 +31,53 @@ const query = {
             url
           }
         }
-          }`,
+    }`,
   }),
 };
 
 const posts = defineCollection({
   schema: z.object({
-      title: z.string(),
-      description: z.string(),
-      slug: z.string(),
-      pubDate: z.string(),
-      body: z.object({
-        markdown: z.string()
-      }),
-      altText: z.array(
-       z.string()
-      ),
-      assets: z.array(
-        z.object({
-          id: z.string(),
-          fileName: z.string(),
-          url: z.string()
-        })
-      ).optional()
+    title: z.string(),
+    description: z.string(),
+    slug: z.string(),
+    pubDate: z.string(),
+    body: z.object({
+      markdown: z.string()
+    }),
+    altText: z.array(
+      z.string()
+    ),
+    assets: z.array(
+      z.object({
+        id: z.string(),
+        fileName: z.string(),
+        url: z.string()
+      })
+    ).optional()
   }),
   loader: async () => {
-    const res = await fetch(import.meta.env.HYGRAPH_ENDPOINT, query);
-    if (!res) {
-      console.error("No posts returned from CMS");
+    try {
+      const endpoint = import.meta.env.HYGRAPH_ENDPOINT;
+      if (!endpoint) {
+        console.warn('HYGRAPH_ENDPOINT not set, returning empty posts array');
+        return [];
+      }
+
+      const res = await fetch(endpoint, query);
+      if (!res.ok) {
+        console.error("Failed to fetch posts from CMS");
+        return [];
+      }
+
+      const json = await res.json();
+      return json.data.posts.map((post: Post) => ({
+        id: post.slug,
+        ...post,
+      }));
+    } catch (error) {
+      console.error("Error loading posts:", error);
       return [];
     }
-    const json = await res.json();
-
-    return json.data.posts.map((post: Post) => ({
-      id: post.slug,
-      ...post,
-    }));
   },
 });
 
