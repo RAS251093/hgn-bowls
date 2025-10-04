@@ -1,12 +1,30 @@
 ---
-import type { CollectionEntry } from 'astro:content';
-import BaseHead from '../components/BaseHead.astro';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
+import type { CollectionEntry } from "astro:content";
+import { Image } from "astro:assets";
+import BaseHead from "../components/BaseHead.astro";
+import Footer from "../components/Footer.astro";
+import Header from "../components/Header.astro";
 
-type Props = CollectionEntry<'blog'>['data'];
+type Props = CollectionEntry<"posts">["data"];
 
-const { title, description, pubDate, updatedDate, heroImage, altText } = Astro.props;
+const { title, description, altText, assets } = Astro.props;
+
+// Add placeholder images array
+const placeholderImgs = [
+	"/blog-placeholder-2.jpg",
+	"/blog-placeholder-3.jpg",
+	"/blog-placeholder-4.jpg",
+	"/blog-placeholder-5.jpg",
+];
+
+// Function to get random placeholder image
+const getRandomPlaceholder = () => {
+	const randomIndex = Math.floor(Math.random() * placeholderImgs.length);
+	return placeholderImgs[randomIndex];
+};
+
+// Import default placeholder for static import
+import defaultPlaceholder from "../assets/blog-placeholder-2.jpg";
 ---
 
 <html lang="en">
@@ -21,11 +39,13 @@ const { title, description, pubDate, updatedDate, heroImage, altText } = Astro.p
 			.hero-image {
 				width: 100%;
 			}
-			.hero-image img {
+			.hero-img {
 				display: block;
 				margin: 0 auto;
 				border-radius: 12px;
 				box-shadow: var(--box-shadow);
+				height: auto;
+				object-fit: cover;
 			}
 			.prose {
 				width: 720px;
@@ -58,7 +78,25 @@ const { title, description, pubDate, updatedDate, heroImage, altText } = Astro.p
 		<main>
 			<article>
 				<div class="hero-image">
-					{heroImage && <img width={700} height={510} src={heroImage} alt={altText} />}
+					{
+						(assets ?? [])?.length > 0 ? (
+							<Image
+								width={700}
+								height={510}
+								src={(assets ?? [])[0]?.url}
+								alt={altText?.[0] ?? "Blog post thumbnail"}
+								class="hero-img"
+							/>
+						) : (
+							<Image
+								width={700}
+								height={510}
+								src={defaultPlaceholder}
+								alt="Blog post placeholder image"
+								class="hero-img"
+							/>
+						)
+					}
 				</div>
 				<div class="prose">
 					<div class="title">

@@ -1,26 +1,29 @@
 ---
-import Layout from '../layouts/BlogPost.astro';
+import Layout from "../layouts/Layout.astro";
+import bowlingGame from "../assets/hough-green-park-bowls-club-bowling-game.jpg";
 ---
 
 <Layout
-	title="Events Calendar"
-	description="Find out about the latest events at Hough Green Park Bowls Club."
-	pubDate={new Date('March 02 2025')}
-  heroImage="/hough-green-park-bowls-club-bowling-game.jpg"
-  altText='A crown green bowling game in progress at Hough Green Park Bowls Club'
+  title="Events Calendar"
+  description="Find out about the latest events at Hough Green Park Bowls Club."
+  heroImage={bowlingGame}
+  altText="A crown green bowling game in progress at Hough Green Park Bowls Club"
 >
-<section id="events-calendar">
-  <p>Check our calendar below for information about upcoming events.</p>
-  <p>Events can include: training sessions with our qualified coaches, social events, open bowling days,
-    friendly competitions, committee meetings, and more!
-  </p>
+  <section id="events-calendar">
+    <p>Check our calendar below for information about upcoming events.</p>
+    <p>
+      Events can include: training sessions with our qualified coaches, social
+      events, open bowling days, friendly competitions, committee meetings, and
+      more!
+    </p>
     <div class="calendar-container">
-      <iframe 
-      src="https://calendar.google.com/calendar/embed?height=600&wkst=2&ctz=Europe%2FLondon&showPrint=0&showCalendars=0&src=NGIxM2VlYjNlYjdkYzc3NzdhYzE5MzE0NGZlMTE5MmM1YWMxODJlODJkMDE4YTllMzVjZjk0ZDQ3ODhiNWUzZUBncm91cC5jYWxlbmRhci5nb29nbGUuY29t&color=%239E69AF" 
-      style="border:solid 1px #777" 
-      width="100%" 
-      height="600" >
-    </iframe>
+      <iframe
+        src="https://calendar.google.com/calendar/embed?height=600&wkst=2&ctz=Europe%2FLondon&showPrint=0&showCalendars=0&src=NGIxM2VlYjNlYjdkYzc3NzdhYzE5MzE0NGZlMTE5MmM1YWMxODJlODJkMDE4YTllMzVjZjk0ZDQ3ODhiNWUzZUBncm91cC5jYWxlbmRhci5nb29nbGUuY29t&color=%239E69AF"
+        style="border:solid 1px #777"
+        width="100%"
+        height="600"
+      >
+      </iframe>
     </div>
   </section>
 </Layout>
