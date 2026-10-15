@@ -1,0 +1,24 @@
+---
+/** StatusBadge: Published or Draft in the admin area, always with the word and an icon. Guide: design-system/components/StatusBadge.md */
+import { Check, Pencil } from "@lucide/astro";
+
+interface Props {
+	status: "published" | "draft";
+}
+
+const { status } = Astro.props;
+---
+
+{
+	status === "published" ? (
+		<span class="inline-flex items-center gap-1 rounded-sm bg-affirmative px-2 text-meta text-affirmative-foreground">
+			<Check size={16} aria-hidden="true" />
+			Published
+		</span>
+	) : (
+		<span class="inline-flex items-center gap-1 rounded-sm bg-warning px-2 text-meta text-warning-foreground">
+			<Pencil size={16} aria-hidden="true" />
+			Draft
+		</span>
+	)
+}

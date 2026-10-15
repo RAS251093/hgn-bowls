@@ -1,0 +1,32 @@
+---
+/**
+ * NewsCard: a club news teaser. The whole card is clickable through the headline link.
+ * Place cards in a `grid gap-8 sm:grid-cols-2 lg:grid-cols-3` on a `bg-secondary` band.
+ * Guide: design-system/components/NewsCard.md
+ */
+import type { ImageMetadata } from "astro";
+import { Image } from "astro:assets";
+
+interface Props {
+	href: string;
+	title: string;
+	date: Date;
+	image: ImageMetadata;
+	description?: string;
+}
+
+const { href, title, date, image, description } = Astro.props;
+---
+
+<article class="group relative flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors duration-120 hover:border-input">
+	<Image src={image} alt="" widths={[360, 560]} sizes="(min-width: 1024px) 360px, 100vw" class="block aspect-3/2 w-full object-cover" />
+	<div class="flex flex-col gap-2 px-6 pt-5 pb-6">
+		<p class="m-0 text-meta text-meta-foreground">
+			<time datetime={date.toISOString()}>{date.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</time>
+		</p>
+		<h3 class="m-0 text-heading-md">
+			<a href={href} class="text-primary no-underline after:absolute after:inset-0 group-hover:underline">{title}</a>
+		</h3>
+		{description && <p class="m-0 text-muted-foreground">{description}</p>}
+	</div>
+</article>
