@@ -1,0 +1,24 @@
+---
+/** Faq: common questions as native disclosures. Guide: design-system/components/Faq.md */
+import { ChevronDown } from "@lucide/astro";
+
+interface Props {
+	items: { question: string; answer: string }[];
+}
+
+const { items } = Astro.props;
+---
+
+<div class="flex flex-col gap-4">
+	{
+		items.map((item) => (
+			<details class="group rounded-lg border border-border bg-card">
+				<summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 px-6 py-4 text-heading-md text-primary [&::-webkit-details-marker]:hidden">
+					{item.question}
+					<ChevronDown size={24} aria-hidden="true" class="shrink-0 transition-transform duration-200 group-open:rotate-180" />
+				</summary>
+				<p class="m-0 px-6 pb-5">{item.answer}</p>
+			</details>
+		))
+	}
+</div>

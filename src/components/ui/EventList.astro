@@ -1,0 +1,49 @@
+---
+/**
+ * EventList: upcoming fixtures and socials from the club's Google Calendar, as rows with a green date tile.
+ * Guide: design-system/components/EventList.md
+ */
+export interface ClubEvent {
+	start: Date;
+	title: string;
+	/** Time and place, e.g. "2pm · Main green". */
+	when: string;
+	description?: string;
+}
+
+interface Props {
+	events: ClubEvent[];
+}
+
+const { events } = Astro.props;
+const fmt = (date: Date, options: Intl.DateTimeFormatOptions) =>
+	date.toLocaleDateString("en-GB", { timeZone: "Europe/London", ...options });
+---
+
+{
+	events.length === 0 ? (
+		<p class="m-0 rounded-md bg-secondary px-6 py-5">
+			Nothing on the calendar yet. <a class="text-primary underline" href="https://calendar.google.com">See the calendar in Google</a>
+		</p>
+	) : (
+		<ul class="m-0 list-none border-t border-border p-0">
+			{events.map((event) => (
+				<li class="flex flex-wrap items-center gap-6 border-b border-border py-5">
+					<div class="flex w-21 shrink-0 flex-col rounded-md bg-primary py-2 text-center text-primary-foreground" aria-hidden="true">
+						<span class="text-meta text-accent">{fmt(event.start, { weekday: "short" })}</span>
+						<span class="text-heading-lg">{fmt(event.start, { day: "numeric" })}</span>
+						<span class="text-meta">{fmt(event.start, { month: "short" })}</span>
+					</div>
+					<div class="flex min-w-0 flex-1 basis-75 flex-col gap-1">
+						<h3 class="m-0 text-heading-md text-primary">
+							<span class="sr-only">{fmt(event.start, { weekday: "long", day: "numeric", month: "long" })}: </span>
+							{event.title}
+						</h3>
+						<p class="m-0 text-muted-foreground">{event.when}</p>
+						{event.description && <p class="m-0 mt-1">{event.description}</p>}
+					</div>
+				</li>
+			))}
+		</ul>
+	)
+}

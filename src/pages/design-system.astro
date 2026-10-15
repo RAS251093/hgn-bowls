@@ -1,0 +1,160 @@
+---
+// Design system reference: every component in its states. Not linked from the site, kept out of the sitemap and search.
+import "../styles/site.css";
+import { CalendarPlus, Plus } from "@lucide/astro";
+import walking from "../assets/hough-green-park-bowls-club-bowling-game.jpg";
+import bowling from "../assets/bowls-game-in-progress.jpg";
+import bowls from "../assets/two-crown-green-bowls.jpg";
+import Button from "../components/ui/Button.astro";
+import Callout from "../components/ui/Callout.astro";
+import EventList from "../components/ui/EventList.astro";
+import Faq from "../components/ui/Faq.astro";
+import Field from "../components/ui/Field.astro";
+import Hero from "../components/ui/Hero.astro";
+import MembershipCard from "../components/ui/MembershipCard.astro";
+import NewsCard from "../components/ui/NewsCard.astro";
+import PostRow from "../components/ui/PostRow.astro";
+import Prose from "../components/ui/Prose.astro";
+import SiteFooter from "../components/ui/SiteFooter.astro";
+import SiteHeader from "../components/ui/SiteHeader.astro";
+import StatusBadge from "../components/ui/StatusBadge.astro";
+import StepList from "../components/ui/StepList.astro";
+import UndoToast from "../components/ui/UndoToast.astro";
+
+const events = [
+	{
+		start: new Date("2027-04-17T13:00:00Z"),
+		title: "Open bowling day",
+		when: "2pm · Main green",
+	},
+	{
+		start: new Date("2027-04-20T17:00:00Z"),
+		title: "Coaching session for beginners",
+		when: "6pm · Main green",
+	},
+	{
+		start: new Date("2027-04-30T18:00:00Z"),
+		title: "Social evening",
+		when: "7pm · Clubhouse",
+	},
+];
+const section = "mx-auto flex max-w-content flex-col gap-8 px-6 py-16";
+---
+
+<!doctype html>
+<html lang="en-GB">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<meta name="robots" content="noindex" />
+		<title>Design system · Hough Green Park Bowls Club</title>
+	</head>
+	<body>
+		<SiteHeader current="Home" />
+		<Hero
+			title="Bowls in the heart of Hough Green Park"
+			lede="A friendly crown green club in Widnes for bowlers of all ages and abilities. New members are always welcome."
+			image={walking}
+			imageAlt="Two club members walking up the green towards the jack and bowls"
+		>
+			<Fragment slot="actions">
+				<Button variant="accent" href="/join">Come and try it</Button>
+				<Button variant="outline" href="/events">What's on</Button>
+			</Fragment>
+		</Hero>
+
+		<main>
+			<section class={section} aria-labelledby="buttons">
+				<h2 id="buttons" class="m-0 text-heading-xl text-primary">Buttons</h2>
+				<div class="flex flex-wrap items-center gap-3">
+					<Button href="#">Open in Google Maps</Button>
+					<Button variant="outline"><CalendarPlus aria-hidden="true" />Add to my calendar</Button>
+					<Button variant="destructive" size="sm">Delete post</Button>
+					<Button disabled>Publish post</Button>
+				</div>
+			</section>
+
+			<section class="border-y border-border bg-card" aria-labelledby="events">
+				<div class={section}>
+					<h2 id="events" class="m-0 text-heading-xl text-primary">What's on</h2>
+					<EventList events={events} />
+					<EventList events={[]} />
+				</div>
+			</section>
+
+			<section class="bg-secondary" aria-labelledby="news">
+				<div class={section}>
+					<h2 id="news" class="m-0 text-heading-xl text-primary">Club news</h2>
+					<div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+						<NewsCard href="#" title="[Latest news headline]" date={new Date("2027-04-12")} image={bowls} description="[First line of the post]" />
+						<NewsCard href="#" title="[News headline]" date={new Date("2027-04-05")} image={bowling} />
+						<NewsCard href="#" title="[News headline]" date={new Date("2027-03-29")} image={walking} />
+					</div>
+					<div class="grid gap-6 md:grid-cols-3">
+						<MembershipCard name="Adult" price="[£00]" note="[Per year. What's included]" />
+						<MembershipCard name="Junior (under 18)" price="[£00]" note="[Per year. What's included]" />
+						<MembershipCard name="Social member" price="[£00]" note="[Per year. What's included]" />
+					</div>
+				</div>
+			</section>
+
+			<section class={section} aria-labelledby="join">
+				<h2 id="join" class="m-0 text-heading-xl text-primary">Join us</h2>
+				<StepList
+					steps={[
+						{ title: "Come to an open day", body: "Check <a href=\"/events\">What's on</a> for the next open bowling day." },
+						{ title: "Have a go with a coach", body: "One of our qualified coaches will show you the basics." },
+						{ title: "Become a member", body: "Enjoyed it? Join the club and take part in matches and socials." },
+					]}
+				/>
+				<div class="grid items-start gap-12 md:grid-cols-2">
+					<Faq
+						items={[
+							{ question: "What should I wear?", answer: "[Club answer, for example the footwear rules for the green]" },
+							{ question: "Do I need my own bowls?", answer: "[Club answer]" },
+						]}
+					/>
+					<form class="on-primary flex flex-col gap-5 rounded-lg p-8">
+						<h3 class="m-0 text-heading-lg">Get in touch</h3>
+						<Field id="name" label="Your name" autocomplete="name" />
+						<Field id="contact" label="Email or phone number" required error="Enter an email address or a phone number so we can reply" />
+						<Field id="message" label="Message (optional)" multiline />
+						<Button variant="accent" type="submit" class="self-start">Send message</Button>
+					</form>
+				</div>
+			</section>
+
+			<section class="bg-secondary" aria-labelledby="admin">
+				<div class={section}>
+					<div class="flex flex-wrap items-center justify-between gap-4">
+						<h2 id="admin" class="m-0 text-heading-xl text-primary">Admin</h2>
+						<Button href="#"><Plus aria-hidden="true" />Write a post</Button>
+					</div>
+					<Callout variant="info">
+						<strong class="font-semibold">Adding an event?</strong> Events come straight from the club's Google Calendar, so add them there as usual.
+						<a slot="action" class="text-label text-info-foreground underline" href="https://calendar.google.com">Open Google Calendar</a>
+					</Callout>
+					<Callout variant="error">The post wasn't published. Add a description of the cover photo, then try again.</Callout>
+					<ul class="m-0 flex list-none flex-col gap-3 p-0">
+						<PostRow title="[Draft post title]" status="draft" meta="Last edited [time]" thumbnail={bowls} editHref="#" />
+						<PostRow title="[Published post title]" status="published" meta="Published [date]" thumbnail={bowling} editHref="#" />
+					</ul>
+					<div class="flex flex-wrap items-center gap-3"><StatusBadge status="published" /><StatusBadge status="draft" /></div>
+					<UndoToast message="Post deleted" />
+				</div>
+			</section>
+
+			<section class={section} aria-labelledby="prose">
+				<h2 id="prose" class="m-0 text-heading-xl text-primary">News post body</h2>
+				<Prose>
+					<p>[Opening paragraph. Body text is set large, with generous line spacing, so it's comfortable to read on a phone.]</p>
+					<h2>[A subheading]</h2>
+					<p>[Further paragraphs. Links look <a href="#">like this</a>.]</p>
+					<ul><li>[A list item]</li><li>[Another list item]</li></ul>
+					<blockquote><p>[A pull quote from a member]</p><footer>[Member's name]</footer></blockquote>
+				</Prose>
+			</section>
+		</main>
+		<SiteFooter />
+	</body>
+</html>

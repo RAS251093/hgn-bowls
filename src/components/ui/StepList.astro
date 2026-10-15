@@ -1,0 +1,22 @@
+---
+/** StepList: a real numbered sequence, such as how to join. 2 to 4 steps. Guide: design-system/components/StepList.md */
+interface Props {
+	steps: { title: string; body: string }[];
+}
+
+const { steps } = Astro.props;
+---
+
+<ol class="m-0 grid list-none gap-8 p-0 md:grid-cols-3">
+	{
+		steps.map((step, index) => (
+			<li class="flex flex-col gap-3 rounded-lg border border-border bg-card p-6">
+				<span class="flex size-11 items-center justify-center rounded-md bg-primary text-heading-md text-accent" aria-hidden="true">
+					{index + 1}
+				</span>
+				<h3 class="m-0 text-heading-md text-primary">{step.title}</h3>
+				<p class="m-0" set:html={step.body} />
+			</li>
+		))
+	}
+</ol>
