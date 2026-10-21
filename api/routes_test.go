@@ -28,3 +28,12 @@ func TestRoutes(t *testing.T) {
 		})
 	}
 }
+
+func TestCIFail(t *testing.T) {
+	want := 1
+	got := 2
+
+	if want != got {
+		t.Fatalf("got %d, want %d", got, want)
+	}
+}
