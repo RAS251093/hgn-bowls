@@ -1,4 +1,21 @@
 {
 	"biome.lsp.bin": "ui/node_modules/@biomejs/cli-darwin-arm64/biome",
-	"biome.configurationPath": "ui/biome.json"
+	"biome.configurationPath": "ui/biome.json",
+	"editor.formatOnSave": true,
+	"[javascript][typescript][json][jsonc][css][astro]": {
+		"editor.defaultFormatter": "biomejs.biome",
+		"editor.codeActionsOnSave": {
+			"source.fixAll.biome": "explicit",
+			"source.organizeImports.biome": "explicit"
+		}
+	},
+	"[go]": {
+		"editor.defaultFormatter": "golang.go",
+		"editor.codeActionsOnSave": {
+			"source.organizeImports": "explicit"
+		}
+	},
+	"go.lintTool": "golangci-lint-v2",
+	"go.lintFlags": ["--path-mode=abs"],
+	"go.lintOnSave": "package"
 }

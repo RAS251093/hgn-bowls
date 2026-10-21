@@ -9,10 +9,10 @@ import (
 func TestRoutes(t *testing.T) {
 	h := newHandler()
 	tests := []struct {
-		name string;
-		method string;
-		path string;
-		want int;
+		name   string
+		method string
+		path   string
+		want   int
 	}{
 		{"health ok", "GET", "/healthz", http.StatusOK},
 		{"health wrong method", "POST", "/healthz", http.StatusMethodNotAllowed},

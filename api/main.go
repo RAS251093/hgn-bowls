@@ -14,8 +14,7 @@ import (
 
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	if err := run(context.Background(), logger);
-	err != nil {
+	if err := run(context.Background(), logger); err != nil {
 		logger.Error("server stopped", "err", err)
 		os.Exit(1)
 	}
@@ -28,12 +27,12 @@ func run(ctx context.Context, logger *slog.Logger) error {
 	mux := newHandler()
 
 	srv := &http.Server{
-	Addr:              ":" + cmp.Or(os.Getenv("PORT"), "8080"),
-    Handler:           mux,
-    ReadHeaderTimeout: 5 * time.Second,   // slow-loris protection
-    ReadTimeout:       10 * time.Second,  // full request read
-    WriteTimeout:      30 * time.Second,  // response write (covers handler time)
-    IdleTimeout:       120 * time.Second, // keep-alive connections
+		Addr:              ":" + cmp.Or(os.Getenv("PORT"), "8080"),
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,   // slow-loris protection
+		ReadTimeout:       10 * time.Second,  // full request read
+		WriteTimeout:      30 * time.Second,  // response write (covers handler time)
+		IdleTimeout:       120 * time.Second, // keep-alive connections
 	}
 
 	errCh := make(chan error, 1)
