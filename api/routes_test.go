@@ -21,19 +21,10 @@ func TestRoutes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			rec := httptest.NewRecorder()
-			h.ServeHTTP(rec, httptest.NewRequest(tt.method, tt.path, nil))
+			h.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), tt.method, tt.path, nil))
 			if rec.Code != tt.want {
 				t.Fatalf("got %d, want %d", rec.Code, tt.want)
 			}
 		})
-	}
-}
-
-func TestCIFail(t *testing.T) {
-	want := 1
-	got := 2
-
-	if want != got {
-		t.Fatalf("got %d, want %d", got, want)
 	}
 }
