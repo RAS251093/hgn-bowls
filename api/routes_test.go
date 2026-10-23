@@ -14,8 +14,9 @@ func TestRoutes(t *testing.T) {
 		path   string
 		want   int
 	}{
-		{"health ok", "GET", "/healthz", http.StatusOK},
-		{"health wrong method", "POST", "/healthz", http.StatusMethodNotAllowed},
+		{"health ok", "GET", "/health", http.StatusOK},
+		{"health wrong method", "POST", "/health", http.StatusMethodNotAllowed},
+		{"healthz 404", "GET", "/healthz", http.StatusNotFound},
 		{"unknown path", "GET", "/nope", http.StatusNotFound},
 	}
 	for _, tt := range tests {
