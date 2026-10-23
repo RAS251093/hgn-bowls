@@ -4,6 +4,6 @@ variable "region" {
   default = "us-central1"
 }
 variable "billing_account" {
-  type = string
+  type        = string
   description = "Billing account ID"
 }
