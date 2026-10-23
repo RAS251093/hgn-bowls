@@ -37,6 +37,26 @@ resource "google_service_account_iam_member" "deployer_wif" {
   member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/${local.github_repo}"
 }
 
+resource "google_artifact_registry_repository_iam_member" "deployer_push" {
+  location   = google_artifact_registry_repository.api.location
+  repository = google_artifact_registry_repository.api.name
+  role       = "roles/artifactregistry.writer"
+  member     = "serviceAccount:${google_service_account.deployer.email}"
+}
+
+resource "google_cloud_run_v2_service_iam_member" "deployer_deploy" {
+  name     = google_cloud_run_v2_service.api.name
+  location = google_cloud_run_v2_service.api.location
+  role     = "roles/run.developer"
+  member   = "serviceAccount:${google_service_account.deployer.email}"
+}
+
+resource "google_service_account_iam_member" "deployer_actas_runtime" {
+  service_account_id = google_service_account.api.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.deployer.email}"
+}
+
 output "wif_provider" {
   value = google_iam_workload_identity_pool_provider.github.name
 }

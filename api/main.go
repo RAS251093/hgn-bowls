@@ -13,7 +13,9 @@ import (
 )
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil)).
+		With("revision", cmp.Or(os.Getenv("K_REVISION"), "local"))
+
 	if err := run(context.Background(), logger); err != nil {
 		logger.Error("server stopped", "err", err)
 		os.Exit(1)
