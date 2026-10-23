@@ -17,7 +17,7 @@ resource "google_cloud_run_v2_service" "api" {
     }
 
     containers {
-      image = "us-docker.pkg.dev/cloudrun/container/hello" #placeholder
+      image = "us-docker.pkg.dev/cloudrun/container/hello" # only used on first create, deploys own the image (see ignore_changes)
 
       resources {
         cpu_idle = true
