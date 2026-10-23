@@ -1,0 +1,49 @@
+name: api
+on:
+  push:
+    branches: [main]
+    paths: ["api/**", ".github/workflows/api.yml"]
+  pull_request:
+    paths: ["api/**", ".github/workflows/api.yml"]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: api
+
+jobs:
+  check:
+    name: build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
+
+      - name: go.mod is tidy
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod go.sum
+
+      - name: no replace directives
+        run: |
+          if grep -q '^replace' go.mod; then
+            echo "go.mod contains a replace directive"; exit 1
+          fi
+
+      - name: build
+        run: go build ./...
+
+      - name: vet
+        run: go vet ./...
+
+      - name: test
+        run: go test -race ./...
+
+      - name: vulnerabilities
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
