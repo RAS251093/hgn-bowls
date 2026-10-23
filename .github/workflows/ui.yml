@@ -2,9 +2,7 @@ name: ui
 on:
   push:
     branches: [main]
-    paths: ["ui/**", ".github/workflows/ui.yml"]
   pull_request:
-    paths: ["ui/**", ".github/workflows/ui.yml"]
 
 permissions:
   contents: read

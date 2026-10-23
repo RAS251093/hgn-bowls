@@ -2,9 +2,7 @@ name: api
 on:
   push:
     branches: [main]
-    paths: ["api/**", ".github/workflows/api.yml"]
   pull_request:
-    paths: ["api/**", ".github/workflows/api.yml"]
 
 permissions:
   contents: read
