@@ -7,3 +7,7 @@ variable "billing_account" {
   type        = string
   description = "Billing account ID"
 }
+variable "alert_email" {
+  type        = string
+  description = "Email address for api alerts"
+}
