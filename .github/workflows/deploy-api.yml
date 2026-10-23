@@ -48,3 +48,8 @@ jobs:
             --image "$IMAGE:$GITHUB_SHA" \
             --region "$REGION" \
             --quiet
+
+      - name: service url
+        id: url
+        run: |
+          echo "url=$(gcloud run services describe api --region "$REGION" --format='value(status.url)')/health" >> "$GITHUB_OUTPUT"
