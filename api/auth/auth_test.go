@@ -10,8 +10,9 @@ import (
 	"testing"
 	"time"
 
-	jose "gopkg.in/go-jose/go-jose.v2"
-	"gopkg.in/go-jose/go-jose.v2/jwt"
+	"github.com/lestrrat-go/jwx/v3/jwa"
+	"github.com/lestrrat-go/jwx/v3/jwk"
+	"github.com/lestrrat-go/jwx/v3/jwt"
 )
 
 const testAudience = "https://api.example.org"
@@ -29,14 +30,29 @@ func newIssuer(t *testing.T) *issuer {
 		t.Fatal(err)
 	}
 	iss := &issuer{key: key}
+	pub, err := jwk.Import(&key.PublicKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for k, v := range map[string]any{jwk.KeyIDKey: "test-key", jwk.AlgorithmKey: jwa.RS256(), jwk.KeyUsageKey: "sig"} {
+		if err := pub.Set(k, v); err != nil {
+			t.Fatal(err)
+		}
+	}
+	set := jwk.NewSet()
+	if err := set.AddKey(pub); err != nil {
+		t.Fatal(err)
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /.well-known/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]string{"jwks_uri": iss.srv.URL + "/.well-known/jwks.json"})
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"issuer":   iss.url(),
+			"jwks_uri": iss.srv.URL + "/.well-known/jwks.json",
+		})
 	})
 	mux.HandleFunc("GET /.well-known/jwks.json", func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(jose.JSONWebKeySet{Keys: []jose.JSONWebKey{
-			{Key: &key.PublicKey, KeyID: "test-key", Algorithm: "RS256", Use: "sig"},
-		}})
+		_ = json.NewEncoder(w).Encode(set)
 	})
 	iss.srv = httptest.NewServer(mux)
 	t.Cleanup(iss.srv.Close)
@@ -48,27 +64,29 @@ func (i *issuer) url() string { return i.srv.URL + "/" }
 // token signs a token with the given key and claims.
 func (i *issuer) token(t *testing.T, key *rsa.PrivateKey, issuerURL, audience string, expiry time.Time, permissions []string) string {
 	t.Helper()
-	signer, err := jose.NewSigner(
-		jose.SigningKey{Algorithm: jose.RS256, Key: jose.JSONWebKey{Key: key, KeyID: "test-key"}},
-		(&jose.SignerOptions{}).WithType("JWT"),
-	)
+	signingKey, err := jwk.Import(key)
 	if err != nil {
 		t.Fatal(err)
 	}
-	raw, err := jwt.Signed(signer).
-		Claims(jwt.Claims{
-			Issuer:   issuerURL,
-			Subject:  "auth0|alice",
-			Audience: jwt.Audience{audience},
-			Expiry:   jwt.NewNumericDate(expiry),
-			IssuedAt: jwt.NewNumericDate(time.Now()),
-		}).
-		Claims(map[string]any{"permissions": permissions}).
-		CompactSerialize()
+	if err := signingKey.Set(jwk.KeyIDKey, "test-key"); err != nil {
+		t.Fatal(err)
+	}
+	tok, err := jwt.NewBuilder().
+		Issuer(issuerURL).
+		Subject("auth0|alice").
+		Audience([]string{audience}).
+		Expiration(expiry).
+		IssuedAt(time.Now()).
+		Claim("permissions", permissions).
+		Build()
 	if err != nil {
 		t.Fatal(err)
 	}
-	return raw
+	raw, err := jwt.Sign(tok, jwt.WithKey(jwa.RS256(), signingKey))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(raw)
 }
 
 func TestRequirePermission(t *testing.T) {

@@ -15,9 +15,9 @@ import (
 	"strings"
 	"time"
 
-	jwtmiddleware "github.com/auth0/go-jwt-middleware/v2"
-	"github.com/auth0/go-jwt-middleware/v2/jwks"
-	"github.com/auth0/go-jwt-middleware/v2/validator"
+	jwtmiddleware "github.com/auth0/go-jwt-middleware/v3"
+	"github.com/auth0/go-jwt-middleware/v3/jwks"
+	"github.com/auth0/go-jwt-middleware/v3/validator"
 )
 
 // keysTTL is how long Auth0's signing keys are cached before refetching.
@@ -48,9 +48,20 @@ func NewVerifier(issuerURL, audience string, client *http.Client, logger *slog.L
 	if err != nil {
 		return nil, fmt.Errorf("auth: parse issuer: %w", err)
 	}
-	keys := jwks.NewCachingProvider(u, keysTTL, jwks.WithCustomClient(client))
-	v, err := validator.New(keys.KeyFunc, validator.RS256, issuerURL, []string{audience},
-		validator.WithCustomClaims(func() validator.CustomClaims { return &claims{} }),
+	keys, err := jwks.NewCachingProvider(
+		jwks.WithIssuerURL(u),
+		jwks.WithCacheTTL(keysTTL),
+		jwks.WithCustomClient(client),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("auth: %w", err)
+	}
+	v, err := validator.New(
+		validator.WithKeyFunc(keys.KeyFunc),
+		validator.WithAlgorithm(validator.RS256),
+		validator.WithIssuer(issuerURL),
+		validator.WithAudience(audience),
+		validator.WithCustomClaims(func() *claims { return &claims{} }),
 		validator.WithAllowedClockSkew(30*time.Second),
 	)
 	if err != nil {
@@ -58,7 +69,8 @@ func NewVerifier(issuerURL, audience string, client *http.Client, logger *slog.L
 	}
 
 	ver := &Verifier{logger: logger}
-	ver.check = jwtmiddleware.New(v.ValidateToken,
+	ver.check, err = jwtmiddleware.New(
+		jwtmiddleware.WithValidator(v),
 		jwtmiddleware.WithValidateOnOptions(false),
 		jwtmiddleware.WithErrorHandler(func(w http.ResponseWriter, r *http.Request, err error) {
 			if !errors.Is(err, jwtmiddleware.ErrJWTMissing) {
@@ -67,6 +79,9 @@ func NewVerifier(issuerURL, audience string, client *http.Client, logger *slog.L
 			unauthorized(w)
 		}),
 	)
+	if err != nil {
+		return nil, fmt.Errorf("auth: %w", err)
+	}
 	return ver, nil
 }
 
@@ -76,8 +91,10 @@ func NewVerifier(issuerURL, audience string, client *http.Client, logger *slog.L
 func (v *Verifier) RequirePermission(perm string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return v.check.CheckJWT(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			c := validated(r)
-			custom, _ := c.CustomClaims.(*claims)
+			var custom *claims
+			if c := validated(r); c != nil {
+				custom, _ = c.CustomClaims.(*claims)
+			}
 			if custom == nil || !slices.Contains(custom.Permissions, perm) {
 				writeError(w, http.StatusForbidden, "you do not have permission to do that")
 				return
@@ -97,7 +114,10 @@ func CallerID(r *http.Request) string {
 }
 
 func validated(r *http.Request) *validator.ValidatedClaims {
-	c, _ := r.Context().Value(jwtmiddleware.ContextKey{}).(*validator.ValidatedClaims)
+	c, err := jwtmiddleware.GetClaims[*validator.ValidatedClaims](r.Context())
+	if err != nil {
+		return nil
+	}
 	return c
 }
 
