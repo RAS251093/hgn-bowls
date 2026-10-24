@@ -41,7 +41,7 @@ func TestCalendarUpcoming(t *testing.T) {
 			}
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(fixture)
+		_, _ = w.Write(fixture)
 	}))
 	defer srv.Close()
 

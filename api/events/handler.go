@@ -61,7 +61,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		res.Events = []Event{}
 	}
 	w.Header().Set("Cache-Control", "public, max-age=60")
-	writeJSON(w, http.StatusOK, response{Events: res.Events, Stale: res.Stale})
+	writeJSON(w, http.StatusOK, response(res))
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

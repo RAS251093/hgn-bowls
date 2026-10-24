@@ -31,14 +31,14 @@ func newCloudflare(t *testing.T) *cloudflare {
 	mux.HandleFunc("POST /hook/secret-id", func(w http.ResponseWriter, r *http.Request) {
 		cf.hookCalls++
 		w.WriteHeader(cf.hookStatus)
-		io.WriteString(w, `{"success":true}`)
+		_, _ = io.WriteString(w, `{"success":true}`)
 	})
 	mux.HandleFunc("GET /client/v4/accounts/{acct}/pages/projects/{proj}/deployments", func(w http.ResponseWriter, r *http.Request) {
 		cf.gotAuth = r.Header.Get("Authorization")
 		cf.gotPath = r.URL.Path
 		cf.gotQuery = r.URL.RawQuery
 		w.WriteHeader(cf.listStatus)
-		io.WriteString(w, cf.listBody)
+		_, _ = io.WriteString(w, cf.listBody)
 	})
 	cf.srv = httptest.NewServer(mux)
 	t.Cleanup(cf.srv.Close)

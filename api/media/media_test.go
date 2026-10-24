@@ -87,7 +87,9 @@ func TestUploadHandler(t *testing.T) {
 			}
 			if tt.wantField != "" {
 				var got struct{ Fields map[string]string }
-				json.NewDecoder(rec.Body).Decode(&got)
+				if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+					t.Fatal(err)
+				}
 				if got.Fields[tt.wantField] == "" {
 					t.Errorf("422 does not name %s: %+v", tt.wantField, got)
 				}
@@ -124,7 +126,9 @@ func TestUploadHandler(t *testing.T) {
 			}
 
 			var sent uploadRequest
-			json.Unmarshal([]byte(tt.body), &sent)
+			if err := json.Unmarshal([]byte(tt.body), &sent); err != nil {
+				t.Fatal(err)
+			}
 			wantHeaders := map[string]string{
 				"Content-Type":                sent.ContentType,
 				"x-goog-content-length-range": "0," + strconv.FormatInt(sent.Size, 10),

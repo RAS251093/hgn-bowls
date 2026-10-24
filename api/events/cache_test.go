@@ -87,9 +87,9 @@ func TestCacheRefreshesAfterTTL(t *testing.T) {
 		src := &fakeSource{events: threeEvents()}
 		c := NewCache(src, time.Minute)
 
-		c.Upcoming(t.Context(), 10)
+		mustUpcoming(t, c)
 		time.Sleep(61 * time.Second)
-		c.Upcoming(t.Context(), 10)
+		mustUpcoming(t, c)
 
 		if got := src.calls.Load(); got != 2 {
 			t.Errorf("source called %d times, want 2 (one refresh after the TTL)", got)
@@ -104,7 +104,7 @@ func TestCacheConcurrentMissesShareOneCall(t *testing.T) {
 
 		var wg sync.WaitGroup
 		for range 10 {
-			wg.Go(func() { c.Upcoming(t.Context(), 10) })
+			wg.Go(func() { mustUpcoming(t, c) })
 		}
 		wg.Wait()
 
@@ -122,7 +122,7 @@ func TestCacheDoesNotCacheErrors(t *testing.T) {
 		if _, err := c.Upcoming(t.Context(), 10); !errors.Is(err, ErrUnavailable) {
 			t.Fatalf("err = %v, want ErrUnavailable", err)
 		}
-		c.Upcoming(t.Context(), 10)
+		_, _ = c.Upcoming(t.Context(), 10) // fails again; only the call count matters
 
 		if got := src.calls.Load(); got != 2 {
 			t.Errorf("source called %d times, want 2 (an error must not be cached)", got)
@@ -151,9 +151,9 @@ func TestCacheSavesSnapshotOnlyWhenEventsChange(t *testing.T) {
 		snaps := &fakeSnapshots{}
 		c := NewCache(src, time.Minute, WithSnapshots(snaps))
 
-		c.Upcoming(t.Context(), 10)
+		mustUpcoming(t, c)
 		time.Sleep(61 * time.Second)
-		c.Upcoming(t.Context(), 10) // same events again
+		mustUpcoming(t, c) // same events again
 
 		if snaps.saves != 1 {
 			t.Errorf("snapshot saved %d times, want 1 (unchanged events are not re-saved)", snaps.saves)
@@ -202,7 +202,7 @@ func TestCacheRecoversAfterGoogleComesBack(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		src := &fakeSource{err: errors.New("google is down")}
 		c := NewCache(src, time.Minute)
-		c.Upcoming(t.Context(), 10)
+		_, _ = c.Upcoming(t.Context(), 10) // fails while Google is down
 
 		src.fail(nil)
 		src.mu.Lock()
@@ -217,4 +217,11 @@ func TestCacheRecoversAfterGoogleComesBack(t *testing.T) {
 			t.Errorf("got %+v, want 3 fresh events", got)
 		}
 	})
+}
+
+func mustUpcoming(t *testing.T, c *Cache) {
+	t.Helper()
+	if _, err := c.Upcoming(t.Context(), 10); err != nil {
+		t.Errorf("upcoming: %v", err)
+	}
 }

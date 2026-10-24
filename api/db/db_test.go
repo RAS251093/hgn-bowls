@@ -16,7 +16,7 @@ func openTest(t *testing.T) *sql.DB {
 	if err != nil {
 		t.Fatalf("open: %v", err)
 	}
-	t.Cleanup(func() { conn.Close() })
+	t.Cleanup(func() { _ = conn.Close() })
 	if err := Migrate(t.Context(), conn); err != nil {
 		t.Fatalf("migrate: %v", err)
 	}

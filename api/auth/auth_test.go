@@ -31,10 +31,10 @@ func newIssuer(t *testing.T) *issuer {
 	iss := &issuer{key: key}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /.well-known/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]string{"jwks_uri": iss.srv.URL + "/.well-known/jwks.json"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"jwks_uri": iss.srv.URL + "/.well-known/jwks.json"})
 	})
 	mux.HandleFunc("GET /.well-known/jwks.json", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(jose.JSONWebKeySet{Keys: []jose.JSONWebKey{
+		_ = json.NewEncoder(w).Encode(jose.JSONWebKeySet{Keys: []jose.JSONWebKey{
 			{Key: &key.PublicKey, KeyID: "test-key", Algorithm: "RS256", Use: "sig"},
 		}})
 	})

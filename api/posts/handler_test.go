@@ -60,7 +60,7 @@ func newEnv(t *testing.T) *env {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { conn.Close() })
+	t.Cleanup(func() { _ = conn.Close() })
 	if err := db.Migrate(t.Context(), conn); err != nil {
 		t.Fatal(err)
 	}
