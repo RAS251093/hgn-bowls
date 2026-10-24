@@ -85,7 +85,7 @@ func run(ctx context.Context, logger *slog.Logger) error {
 	}
 	defer gcs.Close()
 
-	verifier, err := auth.NewVerifier("https://"+cfg.Auth0Domain+"/", cfg.Auth0Audience,
+	verifier, err := auth.NewVerifier(ctx, "https://"+cfg.Auth0Domain+"/", cfg.Auth0Audience,
 		&http.Client{Timeout: 5 * time.Second}, logger)
 	if err != nil {
 		return err

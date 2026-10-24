@@ -45,12 +45,6 @@ func newIssuer(t *testing.T) *issuer {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /.well-known/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]string{
-			"issuer":   iss.url(),
-			"jwks_uri": iss.srv.URL + "/.well-known/jwks.json",
-		})
-	})
 	mux.HandleFunc("GET /.well-known/jwks.json", func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(set)
 	})
@@ -95,7 +89,7 @@ func TestRequirePermission(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	v, err := NewVerifier(iss.url(), testAudience, iss.srv.Client(), slog.New(slog.DiscardHandler))
+	v, err := NewVerifier(t.Context(), iss.url(), testAudience, iss.srv.Client(), slog.New(slog.DiscardHandler))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,6 +115,9 @@ func TestRequirePermission(t *testing.T) {
 		{"wrong issuer", "Bearer " + iss.token(t, iss.key, "https://evil.example/", testAudience, hour, []string{"manage:posts"}), 401, ""},
 		{"signed by another key", "Bearer " + iss.token(t, otherKey, iss.url(), testAudience, hour, []string{"manage:posts"}), 401, ""},
 		{"valid but missing permission", "Bearer " + iss.token(t, iss.key, iss.url(), testAudience, hour, []string{"read:things"}), 403, ""},
+		{"HS256 token signed with a shared secret", "Bearer " + hmacToken(t, iss.url()), 401, ""},
+		{"token without a key ID", "Bearer " + iss.tokenWithoutKid(t), 401, ""},
+		{"empty bearer", "Bearer ", 401, ""},
 		{"valid with no permissions at all", "Bearer " + iss.token(t, iss.key, iss.url(), testAudience, hour, nil), 403, ""},
 	}
 	for _, tt := range tests {
@@ -148,10 +145,10 @@ func TestRequirePermission(t *testing.T) {
 
 func TestNewVerifierNeedsSettings(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
-	if _, err := NewVerifier("", testAudience, http.DefaultClient, logger); err == nil {
+	if _, err := NewVerifier(t.Context(), "", testAudience, http.DefaultClient, logger); err == nil {
 		t.Error("expected an error with no issuer")
 	}
-	if _, err := NewVerifier("https://club.eu.auth0.com/", "", http.DefaultClient, logger); err == nil {
+	if _, err := NewVerifier(t.Context(), "https://club.eu.auth0.com/", "", http.DefaultClient, logger); err == nil {
 		t.Error("expected an error with no audience")
 	}
 }
@@ -201,5 +198,70 @@ func TestBuildToken(t *testing.T) {
 func TestBuildTokenRefusesEmptyToken(t *testing.T) {
 	if _, err := BuildToken(""); err == nil {
 		t.Fatal("an empty build token must be refused, or an empty bearer would get in")
+	}
+}
+
+// hmacToken tries algorithm confusion: an HS256 token naming the real key ID.
+func hmacToken(t *testing.T, issuerURL string) string {
+	t.Helper()
+	key, err := jwk.Import([]byte("guessable-secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := key.Set(jwk.KeyIDKey, "test-key"); err != nil {
+		t.Fatal(err)
+	}
+	tok, err := jwt.NewBuilder().Issuer(issuerURL).Subject("auth0|mallory").Audience([]string{testAudience}).
+		Expiration(time.Now().Add(time.Hour)).Claim("permissions", []string{"manage:posts"}).Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := jwt.Sign(tok, jwt.WithKey(jwa.HS256(), key))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(raw)
+}
+
+func (i *issuer) tokenWithoutKid(t *testing.T) string {
+	t.Helper()
+	tok, err := jwt.NewBuilder().Issuer(i.url()).Subject("auth0|alice").Audience([]string{testAudience}).
+		Expiration(time.Now().Add(time.Hour)).Claim("permissions", []string{"manage:posts"}).Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := jwt.Sign(tok, jwt.WithKey(jwa.RS256(), i.key))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(raw)
+}
+
+func TestKeysUnavailableIs503(t *testing.T) {
+	down := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	t.Cleanup(down.Close)
+	iss := newIssuer(t)
+	v, err := NewVerifier(t.Context(), down.URL+"/", testAudience, down.Client(), slog.New(slog.DiscardHandler))
+	if err != nil {
+		t.Fatal(err)
+	}
+	v.keysWait = 50 * time.Millisecond
+	h := v.RequirePermission("manage:posts")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Error("handler ran without verified keys")
+	}))
+	req := httptest.NewRequestWithContext(t.Context(), "GET", "/api/admin/posts", nil)
+	req.Header.Set("Authorization", "Bearer "+iss.token(t, iss.key, down.URL+"/", testAudience, time.Now().Add(time.Hour), []string{"manage:posts"}))
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Errorf("status = %d, want 503 when Auth0's keys can't be fetched", rec.Code)
+	}
+}
+
+func TestNewVerifierWantsAuth0StyleIssuer(t *testing.T) {
+	if _, err := NewVerifier(t.Context(), "https://club.eu.auth0.com", testAudience, http.DefaultClient, slog.New(slog.DiscardHandler)); err == nil {
+		t.Error("expected an error for an issuer without the trailing slash Auth0 puts in tokens")
 	}
 }
