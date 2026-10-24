@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+	_ "time/tzdata" // embed time-zone data so Europe/London always loads
 )
 
 const defaultBaseURL = "https://www.googleapis.com/calendar/v3"
@@ -113,7 +114,7 @@ func (g *googleEvent) toEvent() (Event, error) {
 		ID:          g.ID,
 		Title:       g.Summary,
 		Location:    g.Location,
-		Description: g.Description,
+		Description: plainText(g.Description),
 	}
 
 	if g.Start.Date != "" { // all-day
