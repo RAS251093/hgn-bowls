@@ -1,0 +1,18 @@
+{
+  "items": [
+    {
+      "id": "timed1",
+      "summary": "Open bowling day",
+      "location": "Main green",
+      "description": "Bowls provided.",
+      "start": { "dateTime": "2026-04-18T13:00:00Z" },
+      "end":   { "dateTime": "2026-04-18T16:00:00Z" }
+    },
+    {
+      "id": "allday1",
+      "summary": "Club competition",
+      "start": { "date": "2026-04-25" },
+      "end":   { "date": "2026-04-26" }
+    }
+  ]
+}

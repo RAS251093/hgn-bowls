@@ -6,6 +6,9 @@ linters:
     - errorlint            
     - noctx                
     - gosec                
+  exclusions:
+    presets:
+      - std-error-handling # unchecked Close, Write and friends, as golangci-lint v1 allowed
 formatters:
   enable:
     - gofmt
