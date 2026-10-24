@@ -69,9 +69,9 @@ func TestUploadHandler(t *testing.T) {
 		wantKey    string
 		wantField  string
 	}{
-		{name: "jpeg", body: `{"contentType":"image/jpeg","size":2048}`, wantStatus: 200, wantKey: "posts/"+month+"/01JABCDEF.jpg"},
-		{name: "png", body: `{"contentType":"image/png","size":1}`, wantStatus: 200, wantKey: "posts/"+month+"/01JABCDEF.png"},
-		{name: "webp at the limit", body: `{"contentType":"image/webp","size":10485760}`, wantStatus: 200, wantKey: "posts/"+month+"/01JABCDEF.webp"},
+		{name: "jpeg", body: `{"contentType":"image/jpeg","size":2048}`, wantStatus: 200, wantKey: "posts/" + month + "/01JABCDEF.jpg"},
+		{name: "png", body: `{"contentType":"image/png","size":1}`, wantStatus: 200, wantKey: "posts/" + month + "/01JABCDEF.png"},
+		{name: "webp at the limit", body: `{"contentType":"image/webp","size":10485760}`, wantStatus: 200, wantKey: "posts/" + month + "/01JABCDEF.webp"},
 		{name: "too big", body: `{"contentType":"image/jpeg","size":10485761}`, wantStatus: 422, wantField: "size"},
 		{name: "empty file", body: `{"contentType":"image/jpeg","size":0}`, wantStatus: 422, wantField: "size"},
 		{name: "svg refused", body: `{"contentType":"image/svg+xml","size":10}`, wantStatus: 422, wantField: "contentType"},

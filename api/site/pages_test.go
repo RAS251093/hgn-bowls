@@ -14,14 +14,14 @@ import (
 
 // cloudflare fakes the deploy hook and the deployments API.
 type cloudflare struct {
-	hookStatus    int
-	hookCalls     int
-	listStatus    int
-	listBody      string
-	gotAuth       string
-	gotPath       string
-	gotQuery      string
-	srv           *httptest.Server
+	hookStatus int
+	hookCalls  int
+	listStatus int
+	listBody   string
+	gotAuth    string
+	gotPath    string
+	gotQuery   string
+	srv        *httptest.Server
 }
 
 func newCloudflare(t *testing.T) *cloudflare {
