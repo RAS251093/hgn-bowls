@@ -8,11 +8,13 @@ tool (
 )
 
 require (
+	github.com/auth0/go-jwt-middleware/v2 v2.3.1
 	github.com/google/go-cmp v0.7.0
 	github.com/pressly/goose/v3 v3.29.0
 	github.com/tursodatabase/libsql-client-go v0.0.0-20260528064733-9d5d30a29a60
 	golang.org/x/net v0.61.0
 	golang.org/x/sync v0.24.0
+	gopkg.in/go-jose/go-jose.v2 v2.6.3
 	modernc.org/sqlite v1.61.0
 )
 

@@ -1,0 +1,187 @@
+package auth
+
+import (
+	"crypto/rand"
+	"crypto/rsa"
+	"encoding/json"
+	"log/slog"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	jose "gopkg.in/go-jose/go-jose.v2"
+	"gopkg.in/go-jose/go-jose.v2/jwt"
+)
+
+const testAudience = "https://api.example.org"
+
+// issuer is a fake Auth0 tenant: it publishes a signing key and signs tokens.
+type issuer struct {
+	srv *httptest.Server
+	key *rsa.PrivateKey
+}
+
+func newIssuer(t *testing.T) *issuer {
+	t.Helper()
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	iss := &issuer{key: key}
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /.well-known/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]string{"jwks_uri": iss.srv.URL + "/.well-known/jwks.json"})
+	})
+	mux.HandleFunc("GET /.well-known/jwks.json", func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(jose.JSONWebKeySet{Keys: []jose.JSONWebKey{
+			{Key: &key.PublicKey, KeyID: "test-key", Algorithm: "RS256", Use: "sig"},
+		}})
+	})
+	iss.srv = httptest.NewServer(mux)
+	t.Cleanup(iss.srv.Close)
+	return iss
+}
+
+func (i *issuer) url() string { return i.srv.URL + "/" }
+
+// token signs a token with the given key and claims.
+func (i *issuer) token(t *testing.T, key *rsa.PrivateKey, issuerURL, audience string, expiry time.Time, permissions []string) string {
+	t.Helper()
+	signer, err := jose.NewSigner(
+		jose.SigningKey{Algorithm: jose.RS256, Key: jose.JSONWebKey{Key: key, KeyID: "test-key"}},
+		(&jose.SignerOptions{}).WithType("JWT"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := jwt.Signed(signer).
+		Claims(jwt.Claims{
+			Issuer:   issuerURL,
+			Subject:  "auth0|alice",
+			Audience: jwt.Audience{audience},
+			Expiry:   jwt.NewNumericDate(expiry),
+			IssuedAt: jwt.NewNumericDate(time.Now()),
+		}).
+		Claims(map[string]any{"permissions": permissions}).
+		CompactSerialize()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return raw
+}
+
+func TestRequirePermission(t *testing.T) {
+	iss := newIssuer(t)
+	otherKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	v, err := NewVerifier(iss.url(), testAudience, iss.srv.Client(), slog.New(slog.DiscardHandler))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var gotCaller string
+	protected := v.RequirePermission("manage:posts")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotCaller = CallerID(r)
+	}))
+
+	hour := time.Now().Add(time.Hour)
+	tests := []struct {
+		name       string
+		header     string
+		wantStatus int
+		wantCaller string
+	}{
+		{"valid token with permission", "Bearer " + iss.token(t, iss.key, iss.url(), testAudience, hour, []string{"manage:posts"}), 200, "auth0|alice"},
+		{"no token", "", 401, ""},
+		{"not a bearer token", "Basic abc", 401, ""},
+		{"garbage token", "Bearer not.a.jwt", 401, ""},
+		{"expired", "Bearer " + iss.token(t, iss.key, iss.url(), testAudience, time.Now().Add(-time.Hour), []string{"manage:posts"}), 401, ""},
+		{"wrong audience", "Bearer " + iss.token(t, iss.key, iss.url(), "https://other.example", hour, []string{"manage:posts"}), 401, ""},
+		{"wrong issuer", "Bearer " + iss.token(t, iss.key, "https://evil.example/", testAudience, hour, []string{"manage:posts"}), 401, ""},
+		{"signed by another key", "Bearer " + iss.token(t, otherKey, iss.url(), testAudience, hour, []string{"manage:posts"}), 401, ""},
+		{"valid but missing permission", "Bearer " + iss.token(t, iss.key, iss.url(), testAudience, hour, []string{"read:things"}), 403, ""},
+		{"valid with no permissions at all", "Bearer " + iss.token(t, iss.key, iss.url(), testAudience, hour, nil), 403, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotCaller = ""
+			req := httptest.NewRequestWithContext(t.Context(), "POST", "/api/admin/posts", nil)
+			if tt.header != "" {
+				req.Header.Set("Authorization", tt.header)
+			}
+			rec := httptest.NewRecorder()
+			protected.ServeHTTP(rec, req)
+
+			if rec.Code != tt.wantStatus {
+				t.Errorf("status = %d, want %d (body %s)", rec.Code, tt.wantStatus, rec.Body)
+			}
+			if gotCaller != tt.wantCaller {
+				t.Errorf("caller = %q, want %q", gotCaller, tt.wantCaller)
+			}
+			if tt.wantStatus == 401 && rec.Header().Get("WWW-Authenticate") == "" {
+				t.Error("401 without a WWW-Authenticate header")
+			}
+		})
+	}
+}
+
+func TestNewVerifierNeedsSettings(t *testing.T) {
+	logger := slog.New(slog.DiscardHandler)
+	if _, err := NewVerifier("", testAudience, http.DefaultClient, logger); err == nil {
+		t.Error("expected an error with no issuer")
+	}
+	if _, err := NewVerifier("https://club.eu.auth0.com/", "", http.DefaultClient, logger); err == nil {
+		t.Error("expected an error with no audience")
+	}
+}
+
+func TestCallerIDWithoutToken(t *testing.T) {
+	req := httptest.NewRequestWithContext(t.Context(), "GET", "/", nil)
+	if got := CallerID(req); got != "" {
+		t.Errorf("CallerID on an unauthenticated request = %q, want empty", got)
+	}
+}
+
+func TestBuildToken(t *testing.T) {
+	ok := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	mw, err := BuildToken("s3cret-build-token")
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := mw(ok)
+
+	tests := []struct {
+		name   string
+		header string
+		want   int
+	}{
+		{"correct token", "Bearer s3cret-build-token", 200},
+		{"wrong token", "Bearer nope", 401},
+		{"prefix of the token", "Bearer s3cret", 401},
+		{"empty bearer", "Bearer ", 401},
+		{"no header", "", 401},
+		{"token without Bearer", "s3cret-build-token", 401},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequestWithContext(t.Context(), "GET", "/api/posts", nil)
+			if tt.header != "" {
+				req.Header.Set("Authorization", tt.header)
+			}
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, req)
+			if rec.Code != tt.want {
+				t.Errorf("status = %d, want %d", rec.Code, tt.want)
+			}
+		})
+	}
+}
+
+func TestBuildTokenRefusesEmptyToken(t *testing.T) {
+	if _, err := BuildToken(""); err == nil {
+		t.Fatal("an empty build token must be refused, or an empty bearer would get in")
+	}
+}
