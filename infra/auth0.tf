@@ -80,6 +80,13 @@ resource "auth0_client" "admin" {
   }
 }
 
+# A single-page app can't keep a secret, so it signs in with PKCE alone. The
+# app was made as a regular web app, which authenticates with a secret.
+resource "auth0_client_credentials" "admin" {
+  client_id             = auth0_client.admin.client_id
+  authentication_method = "none"
+}
+
 # Passkeys, with an emailed code for the first sign-in (and if a passkey is
 # lost). No passwords, and nobody can sign themselves up: admins are invited.
 resource "auth0_connection" "admins" {
