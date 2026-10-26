@@ -110,28 +110,8 @@ resource "auth0_connection" "admins" {
   }
 }
 
-# Google sign-in with the club's own OAuth client (Auth0's shared dev keys
-# aren't for production). The secret is write-only, so it never reaches state.
-resource "auth0_connection" "google" {
-  name     = "google-oauth2"
-  strategy = "google-oauth2"
-
-  options {
-    client_id = var.google_oauth_client_id
-    scopes    = ["email", "profile"]
-  }
-
-  options_client_secret_wo         = var.google_oauth_client_secret
-  options_client_secret_wo_version = 1 # bump to rotate the secret
-}
-
 resource "auth0_connection_clients" "admins" {
   connection_id   = auth0_connection.admins.id
-  enabled_clients = [auth0_client.admin.client_id]
-}
-
-resource "auth0_connection_clients" "google" {
-  connection_id   = auth0_connection.google.id
   enabled_clients = [auth0_client.admin.client_id]
 }
 

@@ -35,16 +35,6 @@ variable "auth0_admin_client_id" {
   type        = string
   description = "Client ID of the admin SPA created in the Auth0 dashboard (public, not a secret)"
 }
-variable "google_oauth_client_id" {
-  type        = string
-  description = "Client ID of the club's Google OAuth client, for Google sign-in"
-}
-variable "google_oauth_client_secret" {
-  type        = string
-  description = "Secret of the club's Google OAuth client"
-  sensitive   = true
-  ephemeral   = true # only feeds a write-only attribute, so it never reaches state or plans
-}
 variable "cloudflare_account_id" {
   type = string
 }
