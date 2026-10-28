@@ -1,10 +1,12 @@
 ---
-import { ArrowRight, CalendarPlus } from "@lucide/astro";
+import { Picture } from "astro:assets";
+import { ArrowRight, CalendarPlus, MapPin } from "@lucide/astro";
+import onTheGreen from "../assets/bowls-game-in-progress.jpg";
 import walking from "../assets/hough-green-park-bowls-club-bowling-game.jpg";
 import UpcomingEvents from "../components/UpcomingEvents.astro";
 import Button from "../components/ui/Button.astro";
 import Hero from "../components/ui/Hero.astro";
-import { calendarLinks } from "../config";
+import { calendarLinks, club, mapLinks } from "../config";
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
@@ -17,13 +19,30 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 		title="Bowls in the heart of Hough Green Park"
 		lede="A friendly crown green club in Widnes for bowlers of all ages and abilities. New members are always welcome."
 		image={walking}
-		imageAlt="Two club members walking up the green towards the jack and bowls"
+		imageAlt="A bowler walking up the green after his bowl"
 	>
 		<Fragment slot="actions">
 			<Button variant="accent" href="/join">Come and try it</Button>
 			<Button variant="outline" href="/whats-on">What's on</Button>
 		</Fragment>
 	</Hero>
+
+	<section aria-label="About the club">
+		<div class="mx-auto grid max-w-content gap-8 px-4 py-12 md:grid-cols-3 md:px-6">
+			{
+				[
+					{ title: "All ages and abilities", body: "Complete beginner or seasoned bowler, you'll fit right in." },
+					{ title: "Qualified coaches", body: "Training sessions to help you learn the game or sharpen up." },
+					{ title: "A full programme", body: "Friendly matches, club competitions and socials all year." },
+				].map((fact) => (
+					<div class="flex flex-col gap-2">
+						<h2 class="m-0 text-heading-md text-primary">{fact.title}</h2>
+						<p class="m-0 text-muted-foreground">{fact.body}</p>
+					</div>
+				))
+			}
+		</div>
+	</section>
 
 	<section aria-labelledby="whats-on-title" class="border-y border-border bg-card">
 		<div class="mx-auto flex max-w-content flex-col gap-8 px-4 py-12 md:px-6 md:py-16">
@@ -35,6 +54,32 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 			<a href="/whats-on" class="inline-flex min-h-11 items-center gap-2 self-start text-label text-primary underline hover:decoration-2">
 				See all upcoming events<ArrowRight size={20} aria-hidden="true" />
 			</a>
+		</div>
+	</section>
+
+	<section id="find-us" aria-labelledby="find-us-title" class="scroll-mt-4">
+		<div class="mx-auto grid max-w-content items-center gap-8 px-4 py-12 md:grid-cols-2 md:gap-12 md:px-6 md:py-16">
+			<Picture
+				src={onTheGreen}
+				formats={["avif", "webp"]}
+				width={960}
+				alt="Two club members walking up the green towards the bowls, with the park's trees behind"
+				widths={[480, 720, 960]}
+				sizes="(min-width: 1024px) 560px, 100vw"
+				class="block aspect-4/3 w-full rounded-lg object-cover"
+			/>
+			<div class="flex flex-col gap-5">
+				<h2 id="find-us-title" class="m-0 text-heading-xl text-primary">Find us</h2>
+				<p class="m-0 max-w-form text-body-lg">You'll find the green in Hough Green Park, Widnes.</p>
+				<address class="flex gap-3 rounded-md bg-secondary px-6 py-5 not-italic">
+					<MapPin size={20} aria-hidden="true" class="mt-1 shrink-0 text-primary" />
+					<span><strong class="font-semibold">{club.name}</strong><br />{club.street}<br />{club.town}</span>
+				</address>
+				<div class="flex flex-wrap gap-3">
+					<Button variant="primary" href={mapLinks.open}>Open in Google Maps</Button>
+					<Button variant="outline" href={mapLinks.directions}>Get directions</Button>
+				</div>
+			</div>
 		</div>
 	</section>
 </BaseLayout>

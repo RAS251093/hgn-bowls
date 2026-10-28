@@ -1,5 +1,5 @@
 ---
-import { Image } from "astro:assets";
+import { Picture } from "astro:assets";
 /**
  * Hero: the club green band that opens each page, with the page's one h1.
  * Put up to two Buttons in the `actions` slot: one `accent`, at most one `outline`.
@@ -28,7 +28,7 @@ const { title, lede, image, imageAlt = "" } = Astro.props;
 		{
 			image && (
 				<div class="min-w-0">
-					<Image src={image} alt={imageAlt} width={960} widths={[480, 720, 960]} sizes="(min-width: 1024px) 560px, 100vw" loading="eager" fetchpriority="high" class="block aspect-4/3 w-full rounded-lg object-cover" />
+					<Picture src={image} alt={imageAlt} formats={["avif", "webp"]} width={960} widths={[480, 720, 960]} sizes="(min-width: 1024px) 560px, 100vw" loading="eager" fetchpriority="high" class="block aspect-4/3 w-full rounded-lg object-cover" />
 				</div>
 			)
 		}

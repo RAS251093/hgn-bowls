@@ -1,25 +1,30 @@
 ---
-/** SiteFooter: closes every page on club green. Guide: design-system/components/SiteFooter.md */
+/**
+ * SiteFooter: closes every page on club green. Contact details and the Facebook link
+ * only appear when they're given. Guide: design-system/components/SiteFooter.md
+ */
 interface Props {
 	email?: string;
 	phone?: string;
+	facebook?: string;
 }
 
-const { email = "[Club email]", phone = "[Phone number]" } = Astro.props;
+const { email, phone, facebook } = Astro.props;
+const contact = [email, phone].filter(Boolean).join(" · ");
 const year = new Date().getFullYear();
 const link =
 	"inline-flex min-h-11 items-center text-primary-muted-foreground underline hover:text-primary-foreground";
 ---
 
 <footer class="on-primary text-primary-muted-foreground">
-	<div class="mx-auto flex max-w-content flex-wrap justify-between gap-6 px-6 py-8 text-body-sm">
+	<div class="mx-auto flex max-w-content flex-wrap items-center justify-between gap-6 px-4 py-8 text-body-sm md:px-6">
 		<div class="flex flex-col gap-1">
 			<span class="text-heading-sm font-semibold text-primary-foreground">Hough Green Park Bowls Club</span>
-			<span>{email} · {phone}</span>
+			{contact && <span>{contact}</span>}
 		</div>
 		<div class="flex flex-wrap items-center gap-x-6 gap-y-2">
 			<a class={link} href="/join">Join us</a>
-			<a class={link} href="#">Facebook</a>
+			{facebook && <a class={link} href={facebook}>Facebook</a>}
 			<a class={link} href="/admin">Admin sign in</a>
 			<span>© {year} Hough Green Park Bowls Club</span>
 		</div>
