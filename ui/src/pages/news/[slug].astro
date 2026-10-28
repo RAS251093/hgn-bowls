@@ -1,0 +1,77 @@
+---
+import { Picture } from "astro:assets";
+import { getEntry, render } from "astro:content";
+import { ArrowLeft } from "@lucide/astro";
+import NewsCard from "../../components/ui/NewsCard.astro";
+import Prose from "../../components/ui/Prose.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { coverOf, publishedPosts } from "../../lib/news";
+import { type Post, postDate } from "../../lib/posts";
+
+export async function getStaticPaths() {
+	const posts = await publishedPosts();
+	return posts.map((post) => ({
+		params: { slug: post.slug },
+		props: {
+			post,
+			more: posts.filter((p) => p.slug !== post.slug).slice(0, 3),
+		},
+	}));
+}
+
+interface Props {
+	post: Post;
+	more: Post[];
+}
+
+const { post, more } = Astro.props;
+const entry = await getEntry("posts", post.slug);
+if (!entry) throw new Error(`news: no entry for ${post.slug}`);
+const { Content } = await render(entry);
+const cover = coverOf(post);
+const picture = {
+	alt: cover.alt,
+	formats: ["avif", "webp"] as ("avif" | "webp")[],
+	width: 1000,
+	widths: [480, 720, 1000],
+	sizes: "(min-width: 1048px) 1000px, 100vw",
+	loading: "eager" as const,
+	fetchpriority: "high" as const,
+	class: "block aspect-video w-full rounded-lg object-cover",
+};
+---
+
+<BaseLayout title={post.title} current="News" description={post.description}>
+	<article>
+		<div class="mx-auto flex max-w-measure flex-col gap-4 px-4 pt-12 pb-8 md:px-6">
+			<a href="/news" class="inline-flex min-h-11 items-center gap-2 self-start text-label text-primary underline hover:decoration-2">
+				<ArrowLeft size={20} aria-hidden="true" />All club news
+			</a>
+			<p class="m-0 text-meta text-meta-foreground">
+				<time datetime={post.publishedAt}>{postDate(post.publishedAt)}</time> · Club news
+			</p>
+			<h1 class="m-0 text-balance text-heading-xl text-primary md:text-heading-hero">{post.title}</h1>
+			{post.description && <p class="m-0 text-body-lg text-muted-foreground">{post.description}</p>}
+		</div>
+		<div class="mx-auto max-w-[1000px] px-4 md:px-6">
+			{typeof cover.src === "string" ? <Picture src={cover.src} inferSize {...picture} /> : <Picture src={cover.src} {...picture} />}
+		</div>
+		<div class="mx-auto max-w-measure px-4 pt-8 pb-16 md:px-6">
+			<Prose><Content /></Prose>
+		</div>
+	</article>
+	{
+		more.length > 0 && (
+			<section aria-labelledby="more-title" class="bg-secondary">
+				<div class="mx-auto flex max-w-content flex-col gap-8 px-4 py-12 md:px-6 md:py-16">
+					<h2 id="more-title" class="m-0 text-heading-xl text-primary">More club news</h2>
+					<div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+						{more.map((p) => (
+							<NewsCard href={`/news/${p.slug}`} title={p.title} date={postDate(p.publishedAt)} dateTime={p.publishedAt} image={coverOf(p).src} />
+						))}
+					</div>
+				</div>
+			</section>
+		)
+	}
+</BaseLayout>

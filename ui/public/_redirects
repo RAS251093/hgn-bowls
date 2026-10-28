@@ -1,0 +1,4 @@
+# Cloudflare Pages redirects. Old site addresses keep working.
+/blog /news 301
+/blog/* /news/:splat 301
+/events /whats-on 301

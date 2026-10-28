@@ -6,8 +6,13 @@ import walking from "../assets/hough-green-park-bowls-club-bowling-game.jpg";
 import UpcomingEvents from "../components/UpcomingEvents.astro";
 import Button from "../components/ui/Button.astro";
 import Hero from "../components/ui/Hero.astro";
+import NewsCard from "../components/ui/NewsCard.astro";
 import { calendarLinks, club, mapLinks } from "../config";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { coverOf, publishedPosts } from "../lib/news";
+import { postDate } from "../lib/posts";
+
+const latest = (await publishedPosts()).slice(0, 3);
 ---
 
 <BaseLayout
@@ -56,6 +61,26 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 			</a>
 		</div>
 	</section>
+
+	{
+		latest.length > 0 && (
+			<section aria-labelledby="news-title" class="bg-secondary">
+				<div class="mx-auto flex max-w-content flex-col gap-8 px-4 py-12 md:px-6 md:py-16">
+					<div class="flex flex-wrap items-end justify-between gap-4">
+						<h2 id="news-title" class="m-0 text-heading-xl text-primary">Club news</h2>
+						<a href="/news" class="inline-flex min-h-11 items-center gap-2 text-label text-primary underline hover:decoration-2">
+							All club news<ArrowRight size={20} aria-hidden="true" />
+						</a>
+					</div>
+					<div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+						{latest.map((post) => (
+							<NewsCard href={`/news/${post.slug}`} title={post.title} date={postDate(post.publishedAt)} dateTime={post.publishedAt} image={coverOf(post).src} description={post.description} />
+						))}
+					</div>
+				</div>
+			</section>
+		)
+	}
 
 	<section id="find-us" aria-labelledby="find-us-title" class="scroll-mt-4">
 		<div class="mx-auto grid max-w-content items-center gap-8 px-4 py-12 md:grid-cols-2 md:gap-12 md:px-6 md:py-16">
