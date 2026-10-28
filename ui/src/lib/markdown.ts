@@ -1,10 +1,11 @@
 // Turns a post body (Markdown from the admin editor) into safe HTML at build
-// time. Raw HTML in the Markdown is dropped rather than passed through, and
+// time, with GitHub's Markdown extensions. Raw HTML in the Markdown is dropped rather than passed through, and
 // the result is sanitised with GitHub's allowlist, so a post can't add
 // scripts, styles, frames or javascript: links.
 import type { Element, Root } from "hast";
 import rehypeSanitize from "rehype-sanitize";
 import rehypeStringify from "rehype-stringify";
+import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
 import { unified } from "unified";
@@ -26,6 +27,7 @@ function noSecondH1() {
 
 const processor = unified()
 	.use(remarkParse)
+	.use(remarkGfm) // pasted addresses become links; tables and strikethrough
 	.use(remarkRehype) // no allowDangerousHtml: raw HTML never reaches the output
 	.use(rehypeSanitize)
 	.use(noSecondH1)

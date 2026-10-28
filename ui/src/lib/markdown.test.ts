@@ -20,6 +20,25 @@ describe("renderPost", () => {
 		assert.doesNotMatch(html, /<h1/);
 	});
 
+	test("a pasted address becomes a link", async () => {
+		const html = await renderPost(
+			"Watch it here: https://youtu.be/LegryDpTHXo",
+		);
+		assert.match(
+			html,
+			/<a href="https:\/\/youtu\.be\/LegryDpTHXo">https:\/\/youtu\.be\/LegryDpTHXo<\/a>/,
+		);
+	});
+
+	test("tables and strikethrough render", async () => {
+		const html = await renderPost(
+			"~~Cancelled~~ Moved to Sunday\n\n| Team | Score |\n| --- | --- |\n| Home | 21 |",
+		);
+		assert.match(html, /<del>Cancelled<\/del>/);
+		assert.match(html, /<table>/);
+		assert.match(html, /<td>21<\/td>/);
+	});
+
 	const attacks: { name: string; md: string; banned: RegExp }[] = [
 		{
 			name: "a script tag",
