@@ -1,0 +1,16 @@
+---
+/** UndoToast: confirms a destructive admin action with a 6 second Undo window. One at a time. Guide: design-system/components/UndoToast.md */
+import Button from "./Button.astro";
+
+interface Props {
+	message: string;
+}
+
+const { message } = Astro.props;
+---
+
+<div role="status" class="on-primary relative inline-flex w-fit items-center gap-4 overflow-hidden rounded-md py-3 pr-3 pl-5">
+	<p class="m-0 font-semibold">{message}</p>
+	<Button variant="outline" size="sm" data-undo>Undo</Button>
+	<span aria-hidden="true" class="absolute bottom-0 left-0 h-0.5 w-full origin-left bg-accent animate-[drain_6s_linear_forwards]"></span>
+</div>

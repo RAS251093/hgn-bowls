@@ -1,16 +1,24 @@
 ---
+import walking from "../assets/hough-green-park-bowls-club-bowling-game.jpg";
+import Button from "../components/ui/Button.astro";
+import Hero from "../components/ui/Hero.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<BaseLayout
+	title="Home"
+	current="Home"
+	description="A friendly crown green bowls club in Hough Green Park, Widnes, for bowlers of all ages and abilities."
+>
+	<Hero
+		title="Bowls in the heart of Hough Green Park"
+		lede="A friendly crown green club in Widnes for bowlers of all ages and abilities. New members are always welcome."
+		image={walking}
+		imageAlt="Two club members walking up the green towards the jack and bowls"
+	>
+		<Fragment slot="actions">
+			<Button variant="accent" href="/join">Come and try it</Button>
+			<Button variant="outline" href="/whats-on">What's on</Button>
+		</Fragment>
+	</Hero>
+</BaseLayout>

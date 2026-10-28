@@ -1,0 +1,31 @@
+---
+import { Image } from "astro:assets";
+import { Trash } from "@lucide/astro";
+/** PostRow: one news post in the admin list. Delete acts at once and shows an UndoToast. Guide: design-system/components/PostRow.md */
+import type { ImageMetadata } from "astro";
+import Button from "./Button.astro";
+import StatusBadge from "./StatusBadge.astro";
+
+interface Props {
+	title: string;
+	status: "published" | "draft";
+	/** e.g. "Published 18 April" or "Last edited 14:32". */
+	meta: string;
+	thumbnail?: ImageMetadata;
+	editHref: string;
+}
+
+const { title, status, meta, thumbnail, editHref } = Astro.props;
+---
+
+<li class="flex flex-wrap items-center gap-x-5 gap-y-4 rounded-lg border border-border bg-card p-3">
+	{thumbnail && <Image src={thumbnail} alt="" width={224} height={152} class="h-19 w-28 shrink-0 rounded-sm object-cover" />}
+	<div class="flex min-w-0 flex-1 basis-70 flex-col gap-1">
+		<span class="text-heading-md text-primary">{title}</span>
+		<span class="flex flex-wrap items-center gap-3 text-body-sm text-muted-foreground"><StatusBadge status={status} />{meta}</span>
+	</div>
+	<div class="flex gap-3">
+		<Button variant="outline" size="sm" href={editHref}>Edit post</Button>
+		<Button variant="destructive" size="sm" data-delete-post><Trash aria-hidden="true" />Delete post</Button>
+	</div>
+</li>

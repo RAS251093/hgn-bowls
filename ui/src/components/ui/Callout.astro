@@ -1,0 +1,27 @@
+---
+/**
+ * Callout: a filled notice with one or two sentences and at most one link (in the `action` slot).
+ * `info` for neutral admin notices, `error` for a page-level error. Guide: design-system/components/Callout.md
+ */
+import { CircleAlert, Info } from "@lucide/astro";
+
+interface Props {
+	variant?: "default" | "info" | "error";
+}
+
+const { variant = "default" } = Astro.props;
+const tone = {
+	default: "bg-secondary text-foreground",
+	info: "bg-info text-info-foreground",
+	error: "bg-destructive-tint text-destructive",
+}[variant];
+---
+
+<div class:list={["flex flex-wrap items-center justify-between gap-4 rounded-md px-6 py-5", tone]} role={variant === "error" ? "alert" : undefined}>
+	<p class="m-0 flex items-start gap-3">
+		{variant === "info" && <Info size={20} aria-hidden="true" class="mt-1 shrink-0" />}
+		{variant === "error" && <CircleAlert size={20} aria-hidden="true" class="mt-1 shrink-0" />}
+		<span><slot /></span>
+	</p>
+	<slot name="action" />
+</div>
