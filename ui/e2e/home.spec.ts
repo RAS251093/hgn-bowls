@@ -20,6 +20,20 @@ test("has one h1 and the three club facts", async ({ page }) => {
 	}
 });
 
+test("the hero sends visitors to Find us and What's on", async ({ page }) => {
+	const hero = page.getByRole("region", {
+		name: "Bowls in the heart of Hough Green Park",
+	});
+	await expect(hero.getByRole("link", { name: "Find us" })).toHaveAttribute(
+		"href",
+		"/#find-us",
+	);
+	await expect(hero.getByRole("link", { name: "What's on" })).toHaveAttribute(
+		"href",
+		"/whats-on",
+	);
+});
+
 test("Find us gives the address and opens Google Maps", async ({ page }) => {
 	const findUs = page.getByRole("region", { name: "Find us" });
 	await expect(findUs.locator("address")).toContainText("95 Mayfield Avenue");
