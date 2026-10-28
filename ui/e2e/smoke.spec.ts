@@ -1,0 +1,66 @@
+import { expect, test } from "@playwright/test";
+
+// Every public page. Add new pages here as they're built.
+const pages = ["/", "/whats-on"];
+
+// Linked from the header or footer but not built yet. Once one exists its
+// check fails, as a reminder to take it off this list.
+const notBuiltYet: Record<string, string> = {
+	"/news": "HGB-18",
+	"/admin": "HGB-19",
+};
+
+test.beforeEach(({ page }) =>
+	page.route("https://api.test/api/events*", (route) =>
+		route.fulfill({ json: { events: [], stale: false } }),
+	),
+);
+
+for (const path of pages) {
+	test.describe(path, () => {
+		test("renders with one h1, the landmarks and no console errors", async ({
+			page,
+		}) => {
+			const errors: string[] = [];
+			page.on(
+				"console",
+				(msg) => msg.type() === "error" && errors.push(msg.text()),
+			);
+			page.on("pageerror", (err) => errors.push(err.message));
+
+			const res = await page.goto(path);
+			expect(res?.status()).toBe(200);
+			await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+			await expect(page.getByRole("banner")).toBeVisible();
+			await expect(page.getByRole("main")).toBeVisible();
+			await expect(page.getByRole("contentinfo")).toBeVisible();
+			await expect(page).toHaveTitle(/Hough Green Park Bowls Club/);
+			await page.waitForLoadState("networkidle");
+			expect(errors).toEqual([]);
+		});
+
+		test("every link to another page on the site works", async ({
+			page,
+			request,
+		}) => {
+			await page.goto(path);
+			const hrefs = await page
+				.locator("a[href^='/']")
+				.evaluateAll((links) =>
+					links.map((a) => (a as HTMLAnchorElement).pathname),
+				);
+			for (const href of new Set(hrefs)) {
+				const res = await request.get(href);
+				const ticket = notBuiltYet[href];
+				if (ticket) {
+					expect(
+						res.status(),
+						`${href} exists now: remove it from notBuiltYet (${ticket})`,
+					).toBe(404);
+				} else {
+					expect(res.status(), `${path} links to ${href}`).toBe(200);
+				}
+			}
+		});
+	});
+}
