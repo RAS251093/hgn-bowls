@@ -11,32 +11,42 @@ import (
 	"strings"
 
 	"github.com/pressly/goose/v3"
-	"github.com/tursodatabase/libsql-client-go/libsql"
-	_ "modernc.org/sqlite" // lets libsql open local file: databases (dev and tests)
+	_ "modernc.org/sqlite" // local file: databases (dev and tests)
+	turso "turso.tech/database/tursogo-serverless"
 )
 
 //go:embed migrations/*.sql
 var migrations embed.FS
 
-// Open connects to a Turso database (libsql://…, which needs a token) or a
-// local SQLite file (file:…). Both go through the same libsql driver.
+// Open connects to a Turso Cloud database (libsql://…, which needs a token)
+// or a local SQLite file (file:…, for dev and tests).
+//
+// Turso goes through its serverless driver: it speaks the v3 HTTP protocol,
+// which keeps a transaction's stream open across requests. The older
+// libsql-client-go only speaks v2, where Turso Cloud no longer returns a
+// stream baton, so any transaction broke after its first statement.
 func Open(url, authToken string) (*sql.DB, error) {
-	var opts []libsql.Option
-	if !strings.HasPrefix(url, "file:") {
-		if authToken == "" {
-			return nil, errors.New("a remote database needs an auth token")
+	if strings.HasPrefix(url, "file:") {
+		conn, err := sql.Open("sqlite", url)
+		if err != nil {
+			return nil, fmt.Errorf("opening database: %w", err)
 		}
-		opts = append(opts, libsql.WithAuthToken(authToken))
+		return conn, nil
 	}
-	connector, err := libsql.NewConnector(url, opts...)
-	if err != nil {
-		return nil, fmt.Errorf("connecting to database: %w", err)
+	if authToken == "" {
+		return nil, errors.New("a remote database needs an auth token")
 	}
-	return sql.OpenDB(connector), nil
+	return sql.OpenDB(turso.NewConnector(url, authToken)), nil
 }
 
 // Migrate applies any migrations the database doesn't have yet.
 func Migrate(ctx context.Context, conn *sql.DB) error {
+	// Check the connection first: goose retries its setup on the same
+	// connection, which can hide why the first attempt failed.
+	var one int
+	if err := conn.QueryRowContext(ctx, "SELECT 1").Scan(&one); err != nil {
+		return fmt.Errorf("reaching database: %w", err)
+	}
 	provider, err := goose.NewProvider(goose.DialectSQLite3, conn, migrationsFS())
 	if err != nil {
 		return fmt.Errorf("loading migrations: %w", err)
