@@ -1,4 +1,5 @@
 ---
+import { calendarLinks } from "../../config";
 /**
  * EventList: upcoming fixtures and socials from the club's Google Calendar, as rows with a green date tile.
  * Guide: design-system/components/EventList.md
@@ -23,7 +24,7 @@ const fmt = (date: Date, options: Intl.DateTimeFormatOptions) =>
 {
 	events.length === 0 ? (
 		<p class="m-0 rounded-md bg-secondary px-6 py-5">
-			Nothing on the calendar yet. <a class="text-primary underline" href="https://calendar.google.com">See the calendar in Google</a>
+			Nothing on the calendar yet. <a class="text-primary underline" href={calendarLinks.open}>See the calendar in Google</a>
 		</p>
 	) : (
 		<ul class="m-0 list-none border-t border-border p-0">
@@ -34,7 +35,7 @@ const fmt = (date: Date, options: Intl.DateTimeFormatOptions) =>
 						<span class="text-heading-lg">{fmt(event.start, { day: "numeric" })}</span>
 						<span class="text-meta">{fmt(event.start, { month: "short" })}</span>
 					</div>
-					<div class="flex min-w-0 flex-1 basis-75 flex-col gap-1">
+					<div class="flex min-w-0 flex-1 basis-48 flex-col gap-1">
 						<h3 class="m-0 text-heading-md text-primary">
 							<span class="sr-only">{fmt(event.start, { weekday: "long", day: "numeric", month: "long" })}: </span>
 							{event.title}

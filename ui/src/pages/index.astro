@@ -1,7 +1,10 @@
 ---
+import { ArrowRight, CalendarPlus } from "@lucide/astro";
 import walking from "../assets/hough-green-park-bowls-club-bowling-game.jpg";
+import UpcomingEvents from "../components/UpcomingEvents.astro";
 import Button from "../components/ui/Button.astro";
 import Hero from "../components/ui/Hero.astro";
+import { calendarLinks } from "../config";
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
@@ -21,4 +24,17 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 			<Button variant="outline" href="/whats-on">What's on</Button>
 		</Fragment>
 	</Hero>
+
+	<section aria-labelledby="whats-on-title" class="border-y border-border bg-card">
+		<div class="mx-auto flex max-w-content flex-col gap-8 px-4 py-12 md:px-6 md:py-16">
+			<div class="flex flex-wrap items-end justify-between gap-4">
+				<h2 id="whats-on-title" class="m-0 text-heading-xl text-primary">What's on</h2>
+				<Button variant="outline" href={calendarLinks.subscribe}><CalendarPlus aria-hidden="true" />Add to my calendar</Button>
+			</div>
+			<UpcomingEvents limit={4} />
+			<a href="/whats-on" class="inline-flex min-h-11 items-center gap-2 self-start text-label text-primary underline hover:decoration-2">
+				See all upcoming events<ArrowRight size={20} aria-hidden="true" />
+			</a>
+		</div>
+	</section>
 </BaseLayout>
