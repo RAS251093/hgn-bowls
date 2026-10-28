@@ -4,7 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -172,5 +176,29 @@ func TestListPublishedNewestFirst(t *testing.T) {
 	}
 	if len(got) != 2 || got[0].ID != "new" || got[1].ID != "old" {
 		t.Errorf("order = %v, want new then old", []string{got[0].ID, got[1].ID})
+	}
+}
+
+// A rejected token must surface Turso's answer, not goose's "connection is
+// already closed" after its retries.
+func TestMigrateReportsUnreachableDatabase(t *testing.T) {
+	turso := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = io.WriteString(w, `{"error":"Unauthorized: invalid token"}`)
+	}))
+	t.Cleanup(turso.Close)
+
+	conn, err := Open(turso.URL, "bad-token")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = conn.Close() })
+
+	err = Migrate(t.Context(), conn)
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+	if !strings.Contains(err.Error(), "reaching database") || !strings.Contains(err.Error(), "invalid token") {
+		t.Errorf("err = %v, want it to name the database and Turso's reason", err)
 	}
 }

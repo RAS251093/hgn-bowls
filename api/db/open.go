@@ -37,6 +37,14 @@ func Open(url, authToken string) (*sql.DB, error) {
 
 // Migrate applies any migrations the database doesn't have yet.
 func Migrate(ctx context.Context, conn *sql.DB) error {
+	// goose retries on the same connection, and the libsql driver closes it
+	// after the first failure, so a bad token or URL would otherwise only
+	// surface as "connection is already closed".
+	// A query rather than PingContext: the driver's ping doesn't reach Turso.
+	var one int
+	if err := conn.QueryRowContext(ctx, "SELECT 1").Scan(&one); err != nil {
+		return fmt.Errorf("reaching database: %w", err)
+	}
 	provider, err := goose.NewProvider(goose.DialectSQLite3, conn, migrationsFS())
 	if err != nil {
 		return fmt.Errorf("loading migrations: %w", err)
