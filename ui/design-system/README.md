@@ -23,7 +23,7 @@ The site has two audiences. Visitors and members read the public pages (Home, Wh
 
 The voice is a helpful club member at the gate: warm, clear and unhurried. "You" for the reader, "we" for the club. Contractions throughout (you'll, it's, don't). British spelling (colour, centre, programme).
 - Buttons are {verb} + {noun}: "Come and try it", "Get directions", "Add to my calendar", "Publish post", "Delete post". One label per intent, the same everywhere it appears.
-- Nav and page names are fixed: Home, What's on, News, Find us, Join us.
+- Nav and page names are fixed: Home, What's on, News, Find us. Join us joins them when the club has an online sign-up.
 - Errors say what to do: "Enter an email address or a phone number so we can reply". Never "Invalid input".
 - Empty states lead with the action: "Nothing on the calendar yet. See the calendar in Google".
 - Dates are written out: "Saturday 18 April", "Sat 18 Apr" in tight spaces. Times use the 24-hour clock in the admin area and "2pm" on public pages.

@@ -21,7 +21,6 @@ test("on a phone, the nav sits behind a menu button", async ({
 	await menu.click();
 	await expect(menu).toHaveAttribute("aria-expanded", "true");
 	await expect(nav.getByRole("link", { name: "What's on" })).toBeVisible();
-	await expect(nav.getByRole("link", { name: "Join us" })).toBeVisible();
 
 	await page.keyboard.press("Escape");
 	await expect(menu).toHaveAttribute("aria-expanded", "false");
@@ -45,5 +44,19 @@ test("on a desktop, the nav is always shown", async ({ page, isMobile }) => {
 		"aria-current",
 		"page",
 	);
-	await expect(nav.getByRole("link", { name: "Join us" })).toBeVisible();
+	await expect(nav.getByRole("link")).toHaveText([
+		"Home",
+		"What's on",
+		"News",
+		"Find us",
+	]);
+});
+
+// The club has no online sign-up yet, so nothing should promise one.
+test("no page offers to join online", async ({ page }) => {
+	for (const path of ["/", "/whats-on"]) {
+		await page.goto(path);
+		await expect(page.getByRole("link", { name: /join/i })).toHaveCount(0);
+		await expect(page.locator('a[href^="/join"]')).toHaveCount(0);
+	}
 });

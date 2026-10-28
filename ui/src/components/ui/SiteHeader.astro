@@ -5,11 +5,10 @@
  * simply stays open. Guide: design-system/components/SiteHeader.md
  */
 import { Menu, X } from "@lucide/astro";
-import Button from "./Button.astro";
 
 interface Props {
 	/** The current page's nav label, marked with aria-current. */
-	current?: "Home" | "What's on" | "News" | "Find us" | "Join us";
+	current?: "Home" | "What's on" | "News" | "Find us";
 }
 
 const { current } = Astro.props;
@@ -58,15 +57,6 @@ const links = [
 					</a>
 				))
 			}
-			<Button
-				variant="accent"
-				size="sm"
-				href="/join"
-				class="mt-3 w-full md:mt-0 md:w-auto"
-				aria-current={current === "Join us" ? "page" : undefined}
-			>
-				Join us
-			</Button>
 		</nav>
 	</div>
 </header>
