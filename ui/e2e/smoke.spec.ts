@@ -1,12 +1,11 @@
 import { expect, test } from "@playwright/test";
 
 // Every public page. Add new pages here as they're built.
-const pages = ["/", "/whats-on"];
+const pages = ["/", "/whats-on", "/news", "/news/sample-opening-day"];
 
 // Linked from the header or footer but not built yet. Once one exists its
 // check fails, as a reminder to take it off this list.
 const notBuiltYet: Record<string, string> = {
-	"/news": "HGB-18",
 	"/admin": "HGB-19",
 };
 

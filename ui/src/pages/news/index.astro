@@ -1,0 +1,42 @@
+---
+import { ArrowRight } from "@lucide/astro";
+import Hero from "../../components/ui/Hero.astro";
+import NewsCard from "../../components/ui/NewsCard.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { coverOf, publishedPosts } from "../../lib/news";
+import { postDate } from "../../lib/posts";
+
+const posts = await publishedPosts();
+---
+
+<BaseLayout title="News" current="News" description="News, results and notices from Hough Green Park Bowls Club.">
+	<Hero title="Club news" lede="News, results and notices from the club." />
+	<section aria-label="All club news" class="bg-secondary">
+		<div class="mx-auto max-w-content px-4 py-12 md:px-6 md:py-16">
+			{
+				posts.length === 0 ? (
+					<p class="m-0 rounded-md bg-card px-6 py-5">
+						No news yet.{" "}
+						<a class="inline-flex items-center gap-1 text-primary underline" href="/whats-on">
+							See what's on<ArrowRight size={20} aria-hidden="true" />
+						</a>
+					</p>
+				) : (
+					<div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+						{posts.map((post) => (
+							<NewsCard
+								href={`/news/${post.slug}`}
+								title={post.title}
+								date={postDate(post.publishedAt)}
+								dateTime={post.publishedAt}
+								image={coverOf(post).src}
+								description={post.description}
+								level={2}
+							/>
+						))}
+					</div>
+				)
+			}
+		</div>
+	</section>
+</BaseLayout>
