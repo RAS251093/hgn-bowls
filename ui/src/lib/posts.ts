@@ -35,8 +35,10 @@ export async function loadPosts({
 }: LoadOptions): Promise<Post[]> {
 	if (!buildToken) {
 		if (onPages) {
+			const branch = process.env.CF_PAGES_BRANCH ?? "unknown";
 			throw new Error(
-				"posts: BUILD_TOKEN isn't set, so the build can't read posts. Add it to the Pages project.",
+				`posts: BUILD_TOKEN isn't set for this build (branch ${branch}), so it can't read posts. ` +
+					"Add it under Settings, Variables and Secrets for both Production and Preview, then retry the deployment.",
 			);
 		}
 		return newestFirst(samplePosts);
