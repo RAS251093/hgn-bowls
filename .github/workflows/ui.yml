@@ -45,3 +45,36 @@ jobs:
 
       - name: browser tests
         run: npm run test:e2e
+
+  lighthouse:
+    name: lighthouse budget
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: ui/.nvmrc
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: install
+        run: npm ci
+
+      # Events point at an address that refuses at once, so the score
+      # never depends on the real API or the network.
+      - name: build
+        run: npm run build
+        env:
+          PUBLIC_API_URL: http://127.0.0.1:9
+
+      - name: lighthouse
+        run: npm run lighthouse
+
+      - name: keep the reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse-reports
+          path: ui/.lighthouseci/reports
+          retention-days: 14

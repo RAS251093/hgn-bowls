@@ -15,7 +15,8 @@
 		"format": "biome format --write .",
 		"tokens": "node scripts/build-tokens.mjs",
 		"test": "node --test \"src/**/*.test.ts\"",
-		"test:e2e": "playwright test"
+		"test:e2e": "playwright test",
+		"lighthouse": "npx --yes @lhci/cli@0.15.1 autorun"
 	},
 	"dependencies": {
 		"@lucide/astro": "1.49.0",
