@@ -12,3 +12,5 @@
 - Put Hero straight after it so the two read as one green block.
 - Below 768px the nav wraps under the brand; every link keeps a 44px target.
 - The admin area uses the same bar with "Club admin" as the wordmark, the signed-in name in `text-primary-muted-foreground`, View website and an `outline` `sm` Sign out button.
+
+**On phones** (below 768px) the nav folds behind a Menu button so the header stays one row. The menu lists the links, then Join us as a full-width `accent` button. Escape or choosing a link closes it. Without JavaScript the nav stays open, so nobody loses it.

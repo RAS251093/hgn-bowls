@@ -1,0 +1,27 @@
+---
+import { CalendarPlus, ExternalLink } from "@lucide/astro";
+import UpcomingEvents from "../components/UpcomingEvents.astro";
+import Button from "../components/ui/Button.astro";
+import Hero from "../components/ui/Hero.astro";
+import { calendarLinks } from "../config";
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+	title="What's on"
+	current="What's on"
+	description="Coaching, open days, matches, competitions and socials at Hough Green Park Bowls Club, straight from the club calendar."
+>
+	<Hero
+		title="What's on"
+		lede="Coaching, open days, matches, competitions and socials. Everything the club has planned, in one place."
+	>
+		<Fragment slot="actions">
+			<Button variant="accent" href={calendarLinks.subscribe}><CalendarPlus aria-hidden="true" />Add to my calendar</Button>
+			<Button variant="outline" href={calendarLinks.open}><ExternalLink aria-hidden="true" />Open in Google Calendar</Button>
+		</Fragment>
+	</Hero>
+	<div class="mx-auto max-w-content px-4 py-12 md:px-6 md:py-16">
+		<UpcomingEvents limit={50} byMonth />
+	</div>
+</BaseLayout>

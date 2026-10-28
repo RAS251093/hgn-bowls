@@ -33,6 +33,15 @@ jobs:
       - name: astro check
         run: npx astro check
 
+      - name: unit tests
+        run: npm test
+
       - name: build
         run: npm run build
         # No API_URL is set here, so the content loader uses fixture posts (HGB-18).
+
+      - name: install browser
+        run: npx playwright install --with-deps chromium
+
+      - name: browser tests
+        run: npm run test:e2e
