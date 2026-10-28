@@ -97,6 +97,27 @@ resource "auth0_connection" "admins" {
     disable_signup         = true
     brute_force_protection = true
 
+    # Email OTP needs Auth0's attribute-based connection settings rather
+    # than the legacy ones: email is the identifier, signed in by code.
+    attributes {
+      email {
+        profile_required    = true
+        verification_method = "otp"
+
+        identifier {
+          active         = true
+          default_method = "email_otp"
+        }
+
+        signup {
+          status = "required"
+          verification {
+            active = true
+          }
+        }
+      }
+    }
+
     authentication_methods {
       passkey {
         enabled = true

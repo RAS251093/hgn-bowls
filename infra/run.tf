@@ -109,10 +109,12 @@ resource "google_cloud_run_v2_job" "migrate" {
         image = "us-docker.pkg.dev/cloudrun/container/job" # deploys own the image (see ignore_changes)
         args  = ["migrate"]
 
+        # Jobs always have CPU allocated, and Cloud Run then needs at least
+        # 512Mi. It runs for seconds per deploy, well inside the free tier.
         resources {
           limits = {
             cpu    = "1"
-            memory = "256Mi"
+            memory = "512Mi"
           }
         }
 
