@@ -87,8 +87,9 @@ resource "auth0_client_credentials" "admin" {
   authentication_method = "none"
 }
 
-# Passkeys, with an emailed code for the first sign-in (and if a passkey is
-# lost). No passwords, and nobody can sign themselves up: admins are invited.
+# Passkeys, with a password to get in the first time (or after losing a
+# passkey). Auth0 offers a passkey after the first password sign-in.
+# Nobody can sign themselves up: admins are invited.
 resource "auth0_connection" "admins" {
   name     = "admins"
   strategy = "auth0"
@@ -96,37 +97,18 @@ resource "auth0_connection" "admins" {
   options {
     disable_signup         = true
     brute_force_protection = true
+    password_policy        = "good"
 
-    # Email OTP needs Auth0's attribute-based connection settings rather
-    # than the legacy ones: email is the identifier, signed in by code.
-    attributes {
-      email {
-        profile_required    = true
-        verification_method = "otp"
-
-        identifier {
-          active         = true
-          default_method = "email_otp"
-        }
-
-        signup {
-          status = "required"
-          verification {
-            active = true
-          }
-        }
-      }
+    password_complexity_options {
+      min_length = 12
     }
 
     authentication_methods {
       passkey {
         enabled = true
       }
-      email_otp {
-        enabled = true
-      }
       password {
-        enabled = false
+        enabled = true
       }
     }
 
