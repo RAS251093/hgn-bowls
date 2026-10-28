@@ -1,0 +1,73 @@
+/* The site's stylesheet: Tailwind plus the club design system. Import it once, in BaseHead.astro. */
+@import "tailwindcss";
+@import "./tokens.css";
+
+/* `on-primary:` styles an element inside a club green band (header, hero, footer, the contact form). */
+@custom-variant on-primary (&:where(.on-primary, .on-primary *));
+
+/* Form fields and outline buttons use a 1.5px edge; structural edges stay 1px. */
+@utility border-control {
+	border-width: 1.5px;
+}
+
+@layer base {
+	html {
+		background-color: var(--background);
+		color: var(--foreground);
+		font-family: var(--font-sans);
+		font-size: 18px;
+		line-height: 28px;
+		-webkit-font-smoothing: antialiased;
+	}
+
+	body {
+		margin: 0;
+	}
+
+	*,
+	::before,
+	::after {
+		border-color: var(--border);
+	}
+
+	/* One focus ring everywhere: green on light grounds, turf on club green. */
+	:focus-visible {
+		outline: var(--ring-width) solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	.on-primary,
+	.on-primary * {
+		--ring: var(--ring-on-primary);
+	}
+
+	.on-primary {
+		background-color: var(--primary);
+		color: var(--primary-foreground);
+	}
+
+	a {
+		text-underline-offset: 3px;
+	}
+
+	/* !important so no component's own transition outlasts the user's setting. */
+	@media (prefers-reduced-motion: reduce) {
+		*,
+		::before,
+		::after {
+			/* biome-ignore lint/complexity/noImportantStyles: must beat every component */
+			animation: none !important;
+			/* biome-ignore lint/complexity/noImportantStyles: must beat every component */
+			transition: none !important;
+		}
+	}
+}
+
+@keyframes drain {
+	from {
+		transform: scaleX(1);
+	}
+	to {
+		transform: scaleX(0);
+	}
+}

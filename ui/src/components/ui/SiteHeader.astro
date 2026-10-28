@@ -1,0 +1,49 @@
+---
+/**
+ * SiteHeader: the club green bar on every public page. Sits directly above Hero so the two read as one block.
+ * Guide: design-system/components/SiteHeader.md
+ */
+import Button from "./Button.astro";
+
+interface Props {
+	/** The current page's nav label, marked with aria-current. */
+	current?: "Home" | "What's on" | "News" | "Find us" | "Join us";
+}
+
+const { current } = Astro.props;
+
+const links = [
+	{ label: "Home", href: "/" },
+	{ label: "What's on", href: "/whats-on" },
+	{ label: "News", href: "/news" },
+	{ label: "Find us", href: "/#find-us" },
+] as const;
+---
+
+<header class="on-primary">
+	<div class="mx-auto flex max-w-content flex-wrap items-center justify-between gap-4 px-6 py-4">
+		<a href="/" class="flex items-center gap-3 text-primary-foreground no-underline">
+			<img src="/logos/hgb-roundel-light.svg" alt="" width="44" height="44" class="size-11 shrink-0" />
+			<span class="flex flex-col">
+				<span class="text-heading-sm font-semibold">Hough Green Park</span>
+				<span class="text-meta text-primary-muted-foreground">Bowls Club</span>
+			</span>
+		</a>
+		<nav aria-label="Main" class="flex flex-wrap items-center gap-x-6 gap-y-1">
+			{
+				links.map((link) => (
+					<a
+						href={link.href}
+						aria-current={current === link.label ? "page" : undefined}
+						class="inline-flex min-h-11 items-center border-b-3 border-transparent text-label text-primary-foreground no-underline transition-colors duration-120 hover:border-primary-muted-foreground aria-[current=page]:border-accent"
+					>
+						{link.label}
+					</a>
+				))
+			}
+			<Button variant="accent" size="sm" href="/join" aria-current={current === "Join us" ? "page" : undefined}>
+				Join us
+			</Button>
+		</nav>
+	</div>
+</header>

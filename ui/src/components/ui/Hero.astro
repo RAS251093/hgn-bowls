@@ -1,0 +1,36 @@
+---
+import { Image } from "astro:assets";
+/**
+ * Hero: the club green band that opens each page, with the page's one h1.
+ * Put up to two Buttons in the `actions` slot: one `accent`, at most one `outline`.
+ * The image loads eagerly at high priority: it is the largest thing above the fold.
+ * Guide: design-system/components/Hero.md
+ */
+import type { ImageMetadata } from "astro";
+
+interface Props {
+	title: string;
+	lede?: string;
+	image?: ImageMetadata;
+	imageAlt?: string;
+}
+
+const { title, lede, image, imageAlt = "" } = Astro.props;
+---
+
+<section class="on-primary" aria-labelledby="hero-title">
+	<div class="mx-auto grid max-w-content items-center gap-8 px-4 pt-8 pb-12 md:grid-cols-2 md:gap-12 md:px-6 md:pt-12 md:pb-16">
+		<div class="flex flex-col gap-6">
+			<h1 id="hero-title" class="m-0 text-balance text-heading-xl md:text-heading-hero">{title}</h1>
+			{lede && <p class="m-0 max-w-form text-body-lg text-primary-muted-foreground">{lede}</p>}
+			{Astro.slots.has("actions") && <div class="flex flex-wrap gap-3"><slot name="actions" /></div>}
+		</div>
+		{
+			image && (
+				<div class="min-w-0">
+					<Image src={image} alt={imageAlt} width={960} widths={[480, 720, 960]} sizes="(min-width: 1024px) 560px, 100vw" loading="eager" fetchpriority="high" class="block aspect-4/3 w-full rounded-lg object-cover" />
+				</div>
+			)
+		}
+	</div>
+</section>

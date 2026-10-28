@@ -12,12 +12,18 @@
 		"astro": "astro",
 		"check": "biome check .",
 		"lint": "biome lint .",
-		"format": "biome format --write ."
+		"format": "biome format --write .",
+		"tokens": "node scripts/build-tokens.mjs"
 	},
 	"dependencies": {
-		"astro": "^7.4.2"
+		"@lucide/astro": "1.49.0",
+		"@tailwindcss/vite": "4.3.3",
+		"astro": "^7.4.2",
+		"tailwindcss": "4.3.3"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.6.2"
+		"@astrojs/check": "^0.9.12",
+		"@biomejs/biome": "2.6.2",
+		"typescript": "^6.0.3"
 	}
 }

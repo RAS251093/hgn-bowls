@@ -1,0 +1,57 @@
+---
+/**
+ * Button: the one control for every action. Renders an <a> when `href` is set, otherwise a <button>.
+ * One filled button per container: `primary` on light grounds, `accent` inside a club green band.
+ * Everything else in the cluster is `outline`. Guide: design-system/components/Button.md
+ */
+import type { HTMLAttributes } from "astro/types";
+
+type Props = HTMLAttributes<"button"> &
+	HTMLAttributes<"a"> & {
+		variant?: "primary" | "accent" | "outline" | "destructive";
+		size?: "default" | "sm";
+		href?: string;
+	};
+
+const {
+	variant = "primary",
+	size = "default",
+	href,
+	class: className,
+	type = "button",
+	...rest
+} = Astro.props;
+
+const base =
+	"inline-flex items-center justify-center gap-2 rounded-md border-control text-label whitespace-nowrap no-underline cursor-pointer transition-colors duration-120 active:translate-y-px [&_svg]:size-5 [&_svg]:shrink-0 disabled:cursor-not-allowed disabled:bg-disabled disabled:text-disabled-foreground disabled:border-disabled disabled:translate-y-0";
+
+const sizes = {
+	default: "min-h-12 px-5 py-3",
+	sm: "min-h-11 px-4 py-2",
+};
+
+const variants = {
+	primary:
+		"border-transparent bg-primary text-primary-foreground hover:bg-primary-hover hover:text-primary-foreground",
+	accent:
+		"border-transparent bg-accent text-accent-foreground hover:bg-card hover:text-accent-foreground",
+	outline:
+		"bg-transparent text-primary border-primary hover:bg-secondary hover:text-primary on-primary:text-primary-foreground on-primary:border-accent on-primary:hover:bg-primary-hover on-primary:hover:text-primary-foreground",
+	destructive:
+		"bg-transparent text-destructive border-destructive hover:bg-destructive-tint hover:text-destructive",
+};
+
+const classes = [base, sizes[size], variants[variant], className];
+---
+
+{
+	href ? (
+		<a href={href} class:list={classes} {...rest}>
+			<slot />
+		</a>
+	) : (
+		<button type={type} class:list={classes} {...rest}>
+			<slot />
+		</button>
+	)
+}
