@@ -1,0 +1,27 @@
+{
+  "success": true,
+  "errors": [],
+  "messages": [],
+  "result": [
+    {
+      "id": "d1",
+      "short_id": "d1",
+      "project_name": "hgn-bowls",
+      "environment": "production",
+      "url": "https://d1.hgn-bowls.pages.dev",
+      "created_on": "2026-10-24T09:00:00.000000Z",
+      "modified_on": "2026-10-24T09:01:30.000000Z",
+      "latest_stage": {"name": "deploy", "started_on": "2026-10-24T09:01:20.000000Z", "ended_on": "2026-10-24T09:01:30.000000Z", "status": "success"},
+      "deployment_trigger": {"type": "deploy_hook", "metadata": {"branch": "main", "commit_hash": "abc123", "commit_message": "Publish"}}
+    },
+    {
+      "id": "d0",
+      "environment": "production",
+      "url": "https://d0.hgn-bowls.pages.dev",
+      "created_on": "2026-10-23T09:00:00.000000Z",
+      "latest_stage": {"name": "build", "status": "failure"},
+      "deployment_trigger": {"type": "github:push", "metadata": {"branch": "main"}}
+    }
+  ],
+  "result_info": {"page": 1, "per_page": 25, "count": 2, "total_count": 2}
+}

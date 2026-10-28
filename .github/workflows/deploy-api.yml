@@ -42,6 +42,17 @@ jobs:
       - name: push
         run: docker push "$IMAGE:$GITHUB_SHA"
 
+      # Schema changes go in before the new code that needs them. The old
+      # revision keeps serving if this fails, so migrations must stay
+      # backwards compatible with the code already running.
+      - name: migrate
+        run: |
+          gcloud run jobs update migrate \
+            --image "$IMAGE:$GITHUB_SHA" \
+            --region "$REGION" \
+            --quiet
+          gcloud run jobs execute migrate --region "$REGION" --wait
+
       - name: deploy
         run: |
           gcloud run deploy api \

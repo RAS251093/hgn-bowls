@@ -5,6 +5,10 @@ terraform {
       source  = "hashicorp/google"
       version = "~> 8.8"
     }
+    auth0 = {
+      source  = "auth0/auth0"
+      version = "~> 1.59"
+    }
   }
   backend "gcs" {
     bucket = "hgn-bowls-tfstate"
@@ -17,4 +21,9 @@ provider "google" {
   region                = var.region
   user_project_override = true
   billing_project       = var.project_id
+}
+# Signs in as the hand-made machine-to-machine app; its client ID and secret
+# come from 1Password as AUTH0_CLIENT_ID and AUTH0_CLIENT_SECRET (see .env.op).
+provider "auth0" {
+  domain = var.auth0_domain
 }

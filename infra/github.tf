@@ -51,6 +51,14 @@ resource "google_cloud_run_v2_service_iam_member" "deployer_deploy" {
   member   = "serviceAccount:${google_service_account.deployer.email}"
 }
 
+# Update the migrate job's image and run it.
+resource "google_cloud_run_v2_job_iam_member" "deployer_migrate" {
+  name     = google_cloud_run_v2_job.migrate.name
+  location = google_cloud_run_v2_job.migrate.location
+  role     = "roles/run.developer"
+  member   = "serviceAccount:${google_service_account.deployer.email}"
+}
+
 resource "google_service_account_iam_member" "deployer_actas_runtime" {
   service_account_id = google_service_account.api.name
   role               = "roles/iam.serviceAccountUser"
