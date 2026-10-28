@@ -21,7 +21,8 @@ export const samplePosts: Post[] = [
 		title: "Sample post: coaching sessions for beginners",
 		description:
 			"A second sample post with a longer description, to check how cards wrap when the text runs to two lines.",
-		bodyMd: "Another **sample post** for local builds.",
+		bodyMd:
+			"Another **sample post** for local builds, with a video.\n\nhttps://youtu.be/LegryDpTHXo\n\nVideos play only when pressed.",
 		cover: null,
 		publishedAt: "2026-09-12T10:00:00.000000Z",
 		updatedAt: "2026-09-12T10:00:00.000000Z",

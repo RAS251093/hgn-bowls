@@ -90,3 +90,31 @@ test("old addresses redirect to the new pages", async ({ request }) => {
 	expect(rules).toContain("/blog /news 301");
 	expect(rules).toContain("/events /whats-on 301");
 });
+
+test("a video loads YouTube only when it's played", async ({ page }) => {
+	const youtube: string[] = [];
+	page.on(
+		"request",
+		(req) => /youtube|ytimg/.test(req.url()) && youtube.push(req.url()),
+	);
+	await page.route(/youtube-nocookie\.com/, (route) =>
+		route.fulfill({ body: "player" }),
+	);
+
+	await page.goto("/news/sample-coaching-sessions");
+	const play = page.getByRole("link", { name: "Play video: Watch on YouTube" });
+	await expect(play).toHaveAttribute(
+		"href",
+		"https://www.youtube.com/watch?v=LegryDpTHXo",
+	);
+	await page.waitForLoadState("networkidle");
+	expect(youtube).toEqual([]);
+
+	await play.click();
+	const player = page.locator("figure[data-youtube] iframe");
+	await expect(player).toHaveAttribute(
+		"src",
+		"https://www.youtube-nocookie.com/embed/LegryDpTHXo?autoplay=1&start=0",
+	);
+	await expect(play).toHaveCount(0);
+});

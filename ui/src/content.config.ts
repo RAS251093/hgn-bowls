@@ -16,7 +16,8 @@ const posts = defineCollection({
 				buildToken: process.env.BUILD_TOKEN ?? "",
 				onPages: process.env.CF_PAGES === "1",
 			});
-			if (!process.env.BUILD_TOKEN)
+			const live = Boolean(process.env.BUILD_TOKEN);
+			if (!live)
 				logger.warn("no BUILD_TOKEN, so the build uses the sample posts");
 			store.clear();
 			for (const post of posts) {
@@ -24,7 +25,12 @@ const posts = defineCollection({
 				store.set({
 					id: post.slug,
 					data,
-					rendered: { html: await renderPost(post.bodyMd) },
+					rendered: {
+						// Sample builds fetch nothing, so their videos have no thumbnail.
+						html: await renderPost(post.bodyMd, {
+							fetch: live ? fetch : undefined,
+						}),
+					},
 				});
 			}
 			logger.info(`${posts.length} published posts`);

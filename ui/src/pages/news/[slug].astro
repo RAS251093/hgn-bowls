@@ -75,3 +75,23 @@ const picture = {
 		)
 	}
 </BaseLayout>
+
+<script>
+	// A video in a post is a link to YouTube until someone presses play; then
+	// it becomes the privacy-enhanced player, already playing.
+	for (const figure of document.querySelectorAll<HTMLElement>("figure[data-youtube]")) {
+		const link = figure.querySelector("a");
+		link?.addEventListener("click", (event) => {
+			event.preventDefault();
+			const { youtube: id, start, title } = figure.dataset;
+			const player = document.createElement("iframe");
+			player.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&start=${start ?? 0}`;
+			player.title = title || "YouTube video";
+			player.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+			player.allowFullscreen = true;
+			player.className = "block aspect-video w-full rounded-lg border-0";
+			link.replaceWith(player);
+			player.focus();
+		});
+	}
+</script>
