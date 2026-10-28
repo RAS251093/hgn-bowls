@@ -4,11 +4,19 @@ resource "google_service_account" "api" {
 }
 
 locals {
+  # Browsers may call the API from the site, any Pages preview of it (each
+  # gets its own subdomain) and local dev. The bucket and Auth0 only need
+  # the site itself.
+  api_origins = concat(var.allowed_origins, [
+    "https://*.${var.pages_project}.pages.dev",
+    "http://localhost:4321",
+  ])
+
   # Plain settings; secrets come from local.api_secrets in secrets.tf.
   api_env = {
     GOOGLE_CLOUD_PROJECT  = var.project_id
     CALENDAR_ID           = var.calendar_id
-    ALLOWED_ORIGINS       = join(",", var.allowed_origins)
+    ALLOWED_ORIGINS       = join(",", local.api_origins)
     TURSO_URL             = var.turso_url
     AUTH0_DOMAIN          = var.auth0_domain
     AUTH0_AUDIENCE        = var.auth0_audience
