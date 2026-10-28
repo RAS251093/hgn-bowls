@@ -6,6 +6,7 @@
 import "../styles/site.css";
 import SiteFooter from "../components/ui/SiteFooter.astro";
 import SiteHeader from "../components/ui/SiteHeader.astro";
+import { club } from "../config";
 
 interface Props {
 	/** The page title, before " · Hough Green Park Bowls Club". */
@@ -43,6 +44,6 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
 		<main id="main">
 			<slot />
 		</main>
-		<SiteFooter />
+		<SiteFooter email={club.email} phone={club.phone} facebook={club.facebook} />
 	</body>
 </html>

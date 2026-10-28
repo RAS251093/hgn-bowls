@@ -16,3 +16,23 @@ export const calendarLinks = {
 	/** The calendar itself, viewable without a Google account. */
 	open: `https://calendar.google.com/calendar/embed?src=${id}&ctz=Europe%2FLondon`,
 };
+
+/** The club itself. Leave email or phone undefined to keep them off the site. */
+export const club = {
+	name: "Hough Green Park Bowls Club",
+	street: "95 Mayfield Avenue",
+	town: "Widnes WA8 8PW",
+	facebook: "https://www.facebook.com/houghgreenparkclub/",
+	email: undefined as string | undefined,
+	phone: undefined as string | undefined,
+};
+
+const place = encodeURIComponent(
+	"Hough Green Park Bowls Club, 95 Mayfield Ave, Widnes WA8 8PW",
+);
+
+/** Google Maps URLs (no API key): the club on the map, and directions to it from wherever the visitor is. */
+export const mapLinks = {
+	open: `https://www.google.com/maps/search/?api=1&query=${place}`,
+	directions: `https://www.google.com/maps/dir/?api=1&destination=${place}`,
+};
