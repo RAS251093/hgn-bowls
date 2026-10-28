@@ -52,6 +52,48 @@ func TestCORS(t *testing.T) {
 	}
 }
 
+// Pages gives every preview its own subdomain, so an entry may allow any one
+// subdomain of a host. Nothing broader, and nothing that only looks similar.
+func TestCORSSubdomainPattern(t *testing.T) {
+	ok := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	h := withCORS([]string{"https://hgnbowls.example", "https://*.hgn-bowls.pages.dev"}, ok)
+
+	tests := []struct {
+		origin string
+		want   bool
+	}{
+		{"https://hgb-08-whats-on.hgn-bowls.pages.dev", true},
+		{"https://4f3a9c1e.hgn-bowls.pages.dev", true},
+		{"https://hgn-bowls.pages.dev", false},              // the bare host isn't a subdomain; list it separately
+		{"https://a.b.hgn-bowls.pages.dev", false},          // only one level
+		{"http://preview.hgn-bowls.pages.dev", false},       // scheme must match
+		{"https://preview.hgn-bowls.pages.dev:8443", false}, // so must the port
+		{"https://previewhgn-bowls.pages.dev", false},       // not a subdomain at all
+		{"https://preview.hgn-bowls.pages.dev.evil.example", false},
+		{"https://evil-hgn-bowls.pages.dev", false},
+		{"https://.hgn-bowls.pages.dev", false},  // empty label
+		{"https://*.hgn-bowls.pages.dev", false}, // the pattern itself isn't an origin
+		{"https://hgnbowls.example", true},       // exact entries still work
+	}
+	for _, tt := range tests {
+		t.Run(tt.origin, func(t *testing.T) {
+			req := httptest.NewRequestWithContext(t.Context(), "OPTIONS", "/api/events", nil)
+			req.Header.Set("Origin", tt.origin)
+			req.Header.Set("Access-Control-Request-Method", "GET")
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, req)
+
+			got := rec.Header().Get("Access-Control-Allow-Origin")
+			if tt.want && (rec.Code != http.StatusNoContent || got != tt.origin) {
+				t.Errorf("status %d, Allow-Origin %q; want 204 echoing the origin", rec.Code, got)
+			}
+			if !tt.want && (rec.Code != http.StatusForbidden || got != "") {
+				t.Errorf("status %d, Allow-Origin %q; want 403 and no header", rec.Code, got)
+			}
+		})
+	}
+}
+
 func TestCORSPreflightAllowsAdminHeaders(t *testing.T) {
 	h := withCORS([]string{"https://hgnbowls.example"}, http.NotFoundHandler())
 	req := httptest.NewRequestWithContext(t.Context(), "OPTIONS", "/api/admin/posts/1", nil)
