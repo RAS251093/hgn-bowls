@@ -2,7 +2,8 @@
 /**
  * Field: label, optional help, an input or textarea, and an error message.
  * Labels sit above the field; never use a placeholder as the label. Only required fields are marked.
- * Guide: design-system/components/Field.md
+ * Error styling follows aria-invalid, so with `liveErrors` a script can show and clear errors by
+ * setting it and filling the hidden message. Guide: design-system/components/Field.md
  */
 import { CircleAlert } from "@lucide/astro";
 import type { HTMLAttributes } from "astro/types";
@@ -14,6 +15,8 @@ type Props = Omit<HTMLAttributes<"input">, "id"> & {
 	error?: string;
 	multiline?: boolean;
 	rows?: number;
+	/** Render an empty, hidden error message (data-field-error) for a script to fill. */
+	liveErrors?: boolean;
 };
 
 const {
@@ -23,23 +26,24 @@ const {
 	error,
 	multiline = false,
 	rows = 4,
+	liveErrors = false,
 	required,
 	class: className,
 	...rest
 } = Astro.props;
 const helpId = help ? `${id}-help` : undefined;
-const errorId = error ? `${id}-error` : undefined;
+const errorId = error || liveErrors ? `${id}-error` : undefined;
 const describedBy = [helpId, errorId].filter(Boolean).join(" ") || undefined;
 const control = [
 	"w-full min-h-12 rounded-md border-control bg-card p-3 text-foreground transition-colors duration-120",
 	"hover:border-primary focus-visible:border-primary focus-visible:outline-offset-1",
 	"disabled:cursor-not-allowed disabled:bg-disabled disabled:text-disabled-foreground disabled:border-disabled-foreground",
-	error ? "border-destructive" : "border-input on-primary:border-background",
+	"border-input on-primary:border-background aria-invalid:border-destructive",
 ];
 ---
 
-<div class:list={["flex flex-col gap-2", className]}>
-	<label for={id} class:list={["text-label", error && "text-destructive on-primary:text-primary-foreground"]}>
+<div class:list={["group flex flex-col gap-2", className]}>
+	<label for={id} class="text-label group-has-[[aria-invalid=true]]:text-destructive on-primary:group-has-[[aria-invalid=true]]:text-primary-foreground">
 		{label}{required && <span aria-hidden="true"> *</span>}
 	</label>
 	{help && <p id={helpId} class="m-0 text-body-sm text-muted-foreground on-primary:text-primary-muted-foreground">{help}</p>}
@@ -51,10 +55,10 @@ const control = [
 		)
 	}
 	{
-		error && (
-			<p id={errorId} class="m-0 flex items-start gap-2 text-body-sm font-medium text-destructive on-primary:self-start on-primary:rounded-sm on-primary:bg-destructive-tint on-primary:px-2 on-primary:py-1">
+		(error || liveErrors) && (
+			<p id={errorId} data-field-error hidden={!error} class="m-0 flex items-start gap-2 text-body-sm font-medium text-destructive on-primary:self-start on-primary:rounded-sm on-primary:bg-destructive-tint on-primary:px-2 on-primary:py-1">
 				<CircleAlert size={20} aria-hidden="true" class="mt-0.5 shrink-0" />
-				{error}
+				<span data-message>{error}</span>
 			</p>
 		)
 	}

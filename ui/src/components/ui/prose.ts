@@ -1,0 +1,4 @@
+// The news post body's typography, shared by Prose (the public post) and
+// the admin editor, so what admins write looks as members will see it.
+export const proseClass =
+	"flex max-w-measure flex-col gap-5 text-body-long [&>*]:m-0 [&_h2]:mt-3 [&_h2]:text-heading-lg [&_h2]:text-primary [&_h3]:mt-2 [&_h3]:text-heading-md [&_h3]:text-primary [&_ul]:flex [&_ul]:list-disc [&_ul]:flex-col [&_ul]:gap-2 [&_ul]:pl-6 [&_ol]:flex [&_ol]:list-decimal [&_ol]:flex-col [&_ol]:gap-2 [&_ol]:pl-6 [&_a]:text-primary [&_a]:underline [&_a:hover]:text-primary-hover [&_a:hover]:decoration-2 [&_blockquote]:rounded-md [&_blockquote]:bg-secondary [&_blockquote]:p-6 [&_blockquote]:text-heading-md [&_blockquote]:font-medium [&_blockquote]:text-primary [&_blockquote_footer]:mt-3 [&_blockquote_footer]:text-meta [&_blockquote_footer]:text-meta-foreground";

@@ -21,6 +21,28 @@ const posts = [
 	},
 ];
 
+// Answers GET /api/admin/posts/<id> with that post from the list.
+async function stubPost(page: Page) {
+	await page.route("https://api.test/api/admin/posts/*", (route) => {
+		const id = new URL(route.request().url()).pathname.split("/").pop();
+		const post = posts.find((p) => p.id === id);
+		return route.fulfill({
+			headers: {
+				"Access-Control-Allow-Origin": "*",
+				"Access-Control-Expose-Headers": "ETag",
+				ETag: '"v1"',
+			},
+			json: {
+				...post,
+				description: "",
+				bodyMd: "",
+				coverImageKey: null,
+				coverAlt: null,
+			},
+		});
+	});
+}
+
 async function openList(page: Page, list: object[] = posts) {
 	await stubAuth0(page);
 	await stubPosts(page, [{ status: 200, json: { posts: list } }]);
@@ -52,16 +74,14 @@ test("each row is one link to edit that post, named by its title", async ({
 	await expect(rows.nth(0).getByRole("link")).toHaveCount(1);
 	await expect(
 		page.getByRole("link", { name: "Winter league fixtures" }),
-	).toHaveAttribute("href", "/admin/edit?id=01DRAFT");
+	).toHaveAttribute("href", "/admin?post=01DRAFT");
 	// Deleting happens in the editor, never one slip away on the list.
 	await expect(page.getByRole("button", { name: /delete/i })).toHaveCount(0);
 });
 
 test("the whole row opens the editor, not just the title", async ({ page }) => {
 	await openList(page);
-	await page.route("**/admin/edit?id=01DRAFT", (route) =>
-		route.fulfill({ contentType: "text/html", body: "<title>Editor</title>" }),
-	);
+	await stubPost(page);
 	const row = page
 		.getByRole("list", { name: "Posts" })
 		.getByRole("listitem")
@@ -70,14 +90,17 @@ test("the whole row opens the editor, not just the title", async ({ page }) => {
 	if (!box) throw new Error("row has no box");
 	// Click near the right-hand end, well away from the title text.
 	await page.mouse.click(box.x + box.width - 20, box.y + box.height / 2);
-	await expect(page).toHaveTitle("Editor");
+	await expect(page).toHaveURL(/\/admin\?post=01DRAFT$/);
+	await expect(
+		page.getByRole("heading", { level: 1, name: "Edit post" }),
+	).toBeVisible();
 });
 
 test("Write a post is the page's main action", async ({ page }) => {
 	await openList(page);
 	await expect(
 		page.getByRole("link", { name: "Write a post" }),
-	).toHaveAttribute("href", "/admin/edit");
+	).toHaveAttribute("href", "/admin?post=new");
 });
 
 test("events are pointed to Google Calendar", async ({ page }) => {
@@ -125,11 +148,13 @@ test("the list works from the keyboard alone", async ({ page }) => {
 	expect(order.at(-1)).toBe("Opening day on the green");
 	expect(order.length).toBe(first + 2);
 
-	await page.route("**/admin/edit?id=01LIVE", (route) =>
-		route.fulfill({ contentType: "text/html", body: "<title>Editor</title>" }),
-	);
+	await stubPost(page);
 	await page.keyboard.press("Enter");
-	await expect(page).toHaveTitle("Editor");
+	await expect(page).toHaveURL(/\/admin\?post=01LIVE$/);
+	// Focus moves to the editor's heading, so a screen reader announces it.
+	await expect(
+		page.getByRole("heading", { level: 1, name: "Edit post" }),
+	).toBeFocused();
 });
 
 test("a list that won't load says what to do", async ({ page }) => {

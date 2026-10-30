@@ -48,7 +48,19 @@ export function metaLine(post: AdminPost, now: Date = new Date()): string {
 	return `Last edited ${day(edited, now)}`;
 }
 
+// The admin area is one page, so moving between the list and the editor
+// never reloads it (a reload means a trip through Auth0, as tokens live in
+// memory). ?post=<id> opens the editor for that post, ?post=new a new one.
+export type Route = { view: "list" } | { view: "edit"; id: string | null };
+
 /** The editor for a post; without an id, a new one. */
 export function editHref(id?: string): string {
-	return id ? `/admin/edit?id=${encodeURIComponent(id)}` : "/admin/edit";
+	return `/admin?post=${id ? encodeURIComponent(id) : "new"}`;
+}
+
+/** Which view a URL's query string asks for. */
+export function routeOf(search: string): Route {
+	const post = new URLSearchParams(search).get("post");
+	if (!post) return { view: "list" };
+	return { view: "edit", id: post === "new" ? null : post };
 }

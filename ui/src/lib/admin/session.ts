@@ -36,21 +36,40 @@ export async function startSession(): Promise<Session | null> {
 
 	const params = new URLSearchParams(location.search);
 	if (params.has("state") && (params.has("code") || params.has("error"))) {
+		let back = "/admin";
 		try {
-			await client.handleRedirectCallback();
+			const { appState } = await client.handleRedirectCallback<AppState>();
+			back = adminPath(appState?.returnTo);
 		} finally {
-			history.replaceState(null, "", "/admin");
+			history.replaceState(null, "", back);
 		}
 	}
 
+	const signIn = () =>
+		client.loginWithRedirect<AppState>({
+			appState: { returnTo: location.pathname + location.search },
+		});
 	if (!(await client.isAuthenticated())) {
-		await client.loginWithRedirect();
+		await signIn();
 		return null;
 	}
-	return session(client);
+	return session(client, signIn);
 }
 
-async function session(client: Auth0Client): Promise<Session> {
+// Where to land after signing in: the admin view the admin asked for.
+interface AppState {
+	returnTo?: string;
+}
+
+/** Only ever an admin address on this site, never somewhere else. */
+function adminPath(path: string | undefined): string {
+	return path && /^\/admin\/?(\?[\w=&%.-]*)?$/.test(path) ? path : "/admin";
+}
+
+async function session(
+	client: Auth0Client,
+	signIn: () => Promise<void>,
+): Promise<Session> {
 	const user = await client.getUser();
 	return {
 		name: user?.name || user?.email || "you",
@@ -61,7 +80,7 @@ async function session(client: Auth0Client): Promise<Session> {
 			if (!token) throw new Error("no access token");
 			return token;
 		},
-		signIn: () => client.loginWithRedirect(),
+		signIn,
 		async signOut() {
 			try {
 				await client.revokeRefreshToken();
