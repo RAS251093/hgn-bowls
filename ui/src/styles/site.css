@@ -10,6 +10,19 @@
 	border-width: 1.5px;
 }
 
+/* A card whose stretched link has focus: the one focus ring goes round the
+   whole card, which is what clicking it opens, not just the link text. */
+@utility focus-ring-within-link {
+	&:has(a:focus-visible) {
+		outline: var(--ring-width) solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	& a:focus-visible {
+		outline: none;
+	}
+}
+
 @layer base {
 	html {
 		background-color: var(--background);

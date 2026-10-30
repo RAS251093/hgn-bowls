@@ -1,124 +1,30 @@
 import { expect, type Page, test } from "@playwright/test";
+import {
+	accessToken,
+	auth0,
+	refreshToken,
+	stubAuth0,
+	stubPosts,
+} from "./support/admin";
 
-// The build points the admin page at a stub Auth0 tenant (https://auth.test)
-// and API (https://api.test). The stub signs anyone in at once, as Auth0
-// does when its own session cookie is still there.
-
-const auth0 = "https://auth.test";
-const accessToken = "stub-access-token";
-const refreshToken = "stub-refresh-token";
-
-const b64url = (o: object) =>
-	Buffer.from(JSON.stringify(o)).toString("base64url");
-
-// An ID token the SDK accepts: it checks the claims, not the signature.
-function idToken(nonce: string) {
-	const now = Math.floor(Date.now() / 1000);
-	return [
-		b64url({ alg: "RS256", typ: "JWT" }),
-		b64url({
-			iss: `${auth0}/`,
-			aud: "test-client",
-			sub: "auth0|rob",
-			name: "Rob Smith",
-			email: "rob@example.org",
-			nonce,
-			iat: now,
-			exp: now + 3600,
-		}),
-		"signature",
-	].join(".");
-}
-
-interface Stub {
-	/** Every request to Auth0, in order, as "METHOD /path". */
-	calls: string[];
-	/** Bodies POSTed to /oauth/revoke. */
-	revoked: string[];
-}
-
-/** Stubs Auth0. With signedIn false, /authorize shows a sign-in page instead of returning at once. */
-async function stubAuth0(page: Page, { signedIn = true } = {}): Promise<Stub> {
-	const stub: Stub = { calls: [], revoked: [] };
-	let nonce = "";
-	// Context routes also see the SDK's worker, which makes the token calls.
-	await page.context().route(`${auth0}/**`, async (route) => {
-		const req = route.request();
-		const url = new URL(req.url());
-		stub.calls.push(`${req.method()} ${url.pathname}`);
-		const cors = {
-			"Access-Control-Allow-Origin": "*",
-			"Access-Control-Allow-Headers": "*",
-		};
-		if (req.method() === "OPTIONS") {
-			return route.fulfill({ status: 204, headers: cors });
-		}
-		switch (url.pathname) {
-			case "/authorize": {
-				if (!signedIn) {
-					return route.fulfill({
-						contentType: "text/html",
-						body: "<title>Auth0 sign in</title><h1>Sign in</h1>",
-					});
-				}
-				nonce = url.searchParams.get("nonce") ?? "";
-				const back = new URL(url.searchParams.get("redirect_uri") ?? "");
-				back.searchParams.set("code", "stub-code");
-				back.searchParams.set("state", url.searchParams.get("state") ?? "");
-				return route.fulfill({
-					status: 302,
-					headers: { Location: back.toString() },
-				});
-			}
-			case "/oauth/token":
-				return route.fulfill({
-					headers: cors,
-					json: {
-						access_token: accessToken,
-						refresh_token: refreshToken,
-						id_token: idToken(nonce),
-						token_type: "Bearer",
-						expires_in: 600,
-						scope: "openid profile email offline_access",
-					},
-				});
-			case "/oauth/revoke":
-				stub.revoked.push(req.postData() ?? "");
-				return route.fulfill({ status: 200, headers: cors, body: "" });
-			case "/v2/logout":
-				return route.fulfill({
-					status: 302,
-					headers: { Location: url.searchParams.get("returnTo") ?? "/" },
-				});
-		}
-		return route.fulfill({ status: 404, headers: cors });
-	});
-	return stub;
-}
-
-/** Stubs the admin posts list; returns the Authorization headers it saw. */
-async function stubPosts(
-	page: Page,
-	answers: { status: number; json?: object }[] = [
-		{ status: 200, json: { posts: [] } },
-	],
-) {
-	const seen: string[] = [];
-	await page.route("https://api.test/api/admin/posts", (route) => {
-		seen.push(route.request().headers().authorization ?? "");
-		const answer = answers[Math.min(seen.length - 1, answers.length - 1)];
-		return route.fulfill({ status: answer.status, json: answer.json ?? {} });
-	});
-	return seen;
-}
-
+const post = (id: string, title: string, status: "draft" | "published") => ({
+	id,
+	title,
+	status,
+	publishedAt: status === "published" ? "2026-04-18T09:00:00.000000Z" : null,
+	updatedAt: "2026-04-18T09:00:00.000000Z",
+});
 const posts = {
 	posts: [
-		{ id: "1", title: "Opening day", status: "published" },
-		{ id: "2", title: "AGM notice", status: "published" },
-		{ id: "3", title: "Draft fixtures", status: "draft" },
+		post("1", "Opening day", "published"),
+		post("2", "AGM notice", "published"),
+		post("3", "Draft fixtures", "draft"),
 	],
 };
+
+// The page is ready once the posts have loaded: Write a post appears with them.
+const signedIn = (page: Page) =>
+	expect(page.getByRole("link", { name: "Write a post" })).toBeVisible();
 
 test("a signed-out visitor is sent to Auth0, with PKCE and a refresh token asked for", async ({
 	page,
@@ -145,11 +51,11 @@ test("after sign-in the page shows who's signed in and reads the API with the to
 	const auth = await stubPosts(page, [{ status: 200, json: posts }]);
 
 	await page.goto("/admin");
+	await signedIn(page);
+	await expect(page.getByRole("banner")).toContainText("Rob Smith");
 	await expect(
-		page.getByRole("heading", { level: 1, name: "Club admin" }),
-	).toBeVisible();
-	await expect(page.getByText("Signed in as Rob Smith")).toBeVisible();
-	await expect(page.getByText("2 published posts and 1 draft")).toBeVisible();
+		page.getByRole("list", { name: "Posts" }).getByRole("listitem"),
+	).toHaveCount(3);
 	expect(auth).toEqual([`Bearer ${accessToken}`]);
 	// The code and state are tidied out of the address bar.
 	expect(new URL(page.url()).search).toBe("");
@@ -161,7 +67,7 @@ test("tokens are never kept in local storage, session storage or cookies", async
 	await stubAuth0(page);
 	await stubPosts(page);
 	await page.goto("/admin");
-	await expect(page.getByText("Signed in as Rob Smith")).toBeVisible();
+	await signedIn(page);
 
 	const stored = await page.evaluate(() =>
 		JSON.stringify([
@@ -198,7 +104,9 @@ test("a refused token is renewed once and the request tried again", async ({
 		{ status: 200, json: posts },
 	]);
 	await page.goto("/admin");
-	await expect(page.getByText("2 published posts and 1 draft")).toBeVisible();
+	await expect(
+		page.getByRole("list", { name: "Posts" }).getByRole("listitem"),
+	).toHaveCount(3);
 	expect(auth).toHaveLength(2);
 	// The second token came from the refresh token, not another sign-in.
 	expect(stub.calls.filter((c) => c === "POST /oauth/token")).toHaveLength(2);
@@ -214,7 +122,7 @@ test("sign out revokes the refresh token and ends the Auth0 session", async ({
 		route.fulfill({ json: { events: [], stale: false } }),
 	);
 	await page.goto("/admin");
-	await expect(page.getByText("Signed in as Rob Smith")).toBeVisible();
+	await signedIn(page);
 
 	await page.getByRole("button", { name: "Sign out" }).click();
 	await expect(page).toHaveURL(/\/$/);
@@ -227,7 +135,7 @@ test("sign out revokes the refresh token and ends the Auth0 session", async ({
 	// Nothing is left in the page to sign back in with.
 	const authorizes = stub.calls.filter((c) => c === "GET /authorize").length;
 	await page.goto("/admin");
-	await expect(page.getByText("Signed in as Rob Smith")).toBeVisible();
+	await signedIn(page);
 	expect(stub.calls.filter((c) => c === "GET /authorize")).toHaveLength(
 		authorizes + 1,
 	);
@@ -245,10 +153,10 @@ test("a reload goes through Auth0 and comes back signed in", async ({
 	const stub = await stubAuth0(page);
 	await stubPosts(page);
 	await page.goto("/admin");
-	await expect(page.getByText("Signed in as Rob Smith")).toBeVisible();
+	await signedIn(page);
 
 	await page.reload();
-	await expect(page.getByText("Signed in as Rob Smith")).toBeVisible();
+	await signedIn(page);
 	expect(stub.calls.filter((c) => c === "GET /authorize")).toHaveLength(2);
 	expect(new URL(page.url()).search).toBe("");
 });

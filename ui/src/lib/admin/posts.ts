@@ -1,19 +1,54 @@
 // Posts as the admin pages see them (GET /api/admin/posts).
 
 export interface AdminPost {
+	id: string;
+	title: string;
 	status: "draft" | "published";
+	/** Kept when a post is unpublished, so a draft may have one. */
+	publishedAt: string | null;
+	updatedAt: string;
 }
 
-const count = (n: number, one: string, many: string) =>
-	`${n} ${n === 1 ? one : many}`;
+const london = (o: Intl.DateTimeFormatOptions) =>
+	new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", ...o });
 
-/** "2 published posts and 1 draft", for the admin home page. */
-export function describePosts(posts: AdminPost[]): string {
-	const published = posts.filter((p) => p.status === "published").length;
-	const drafts = posts.length - published;
-	const parts = [
-		published && count(published, "published post", "published posts"),
-		drafts && count(drafts, "draft", "drafts"),
-	].filter(Boolean);
-	return parts.length ? parts.join(" and ") : "No posts yet";
+const dayOf = (d: Date) =>
+	london({ year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
+
+// "18 April", with the year added outside the current one.
+function day(d: Date, now: Date): string {
+	const sameYear =
+		london({ year: "numeric" }).format(d) ===
+		london({ year: "numeric" }).format(now);
+	return london({
+		day: "numeric",
+		month: "long",
+		...(sameYear ? {} : { year: "numeric" }),
+	}).format(d);
+}
+
+/**
+ * The line under a post's title: "Published 18 April" for a live post,
+ * "Last edited 14:32" for a draft changed today (24-hour clock, as the
+ * admin area uses), or "Last edited 29 October" before that.
+ */
+export function metaLine(post: AdminPost, now: Date = new Date()): string {
+	if (post.status === "published" && post.publishedAt) {
+		return `Published ${day(new Date(post.publishedAt), now)}`;
+	}
+	const edited = new Date(post.updatedAt);
+	if (dayOf(edited) === dayOf(now)) {
+		const time = london({
+			hour: "2-digit",
+			minute: "2-digit",
+			hourCycle: "h23",
+		}).format(edited);
+		return `Last edited ${time}`;
+	}
+	return `Last edited ${day(edited, now)}`;
+}
+
+/** The editor for a post; without an id, a new one. */
+export function editHref(id?: string): string {
+	return id ? `/admin/edit?id=${encodeURIComponent(id)}` : "/admin/edit";
 }
