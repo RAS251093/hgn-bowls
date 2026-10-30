@@ -136,8 +136,8 @@ const section = "mx-auto flex max-w-content flex-col gap-8 px-6 py-16";
 					</Callout>
 					<Callout variant="error">The post wasn't published. Add a description of the cover photo, then try again.</Callout>
 					<ul class="m-0 flex list-none flex-col gap-3 p-0">
-						<PostRow title="[Draft post title]" status="draft" meta="Last edited [time]" thumbnail={bowls} editHref="#" />
-						<PostRow title="[Published post title]" status="published" meta="Published [date]" thumbnail={bowling} editHref="#" />
+						<PostRow title="[Draft post title]" status="draft" meta="Last edited [time]" editHref="#" />
+						<PostRow title="[Published post title]" status="published" meta="Published [date]" editHref="#" />
 					</ul>
 					<div class="flex flex-wrap items-center gap-3"><StatusBadge status="published" /><StatusBadge status="draft" /></div>
 					<UndoToast message="Post deleted" />

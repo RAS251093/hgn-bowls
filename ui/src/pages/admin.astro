@@ -1,14 +1,21 @@
 ---
-// The admin home. Everything here happens in the browser: the page signs
-// the admin in with Auth0, then reads the posts from the API with their
-// token. The HTML is the same for everyone and holds no data.
-import { LogOut } from "@lucide/astro";
+// The admin home: the club's news posts. Everything here happens in the
+// browser: the page signs the admin in with Auth0, then reads the posts
+// from the API with their token. The HTML is the same for everyone and
+// holds no data; post titles are only ever set as text.
+import { LogOut, Plus } from "@lucide/astro";
 import Button from "../components/ui/Button.astro";
 import Callout from "../components/ui/Callout.astro";
+import PostRow from "../components/ui/PostRow.astro";
+import StatusBadge from "../components/ui/StatusBadge.astro";
 import AdminLayout from "../layouts/AdminLayout.astro";
+import { editHref } from "../lib/admin/posts";
+
+// Admins add events in Google Calendar itself, signed in as the club.
+const googleCalendar = "https://calendar.google.com/calendar/r";
 ---
 
-<AdminLayout title="Home">
+<AdminLayout title="News posts">
 	<div slot="header" class="flex flex-wrap items-center gap-x-6 gap-y-2">
 		<span data-signed-in-as hidden class="text-body-sm text-primary-muted-foreground"></span>
 		<a href="/" class="inline-flex min-h-11 items-center text-body-sm text-primary-foreground underline">View website</a>
@@ -18,13 +25,20 @@ import AdminLayout from "../layouts/AdminLayout.astro";
 		</Button>
 	</div>
 
-	<h1 class="m-0 text-heading-xl text-primary">Club admin</h1>
+	<div class="flex flex-wrap items-center justify-between gap-4">
+		<h1 class="m-0 text-heading-xl text-primary">News posts</h1>
+		<Button href={editHref()} data-ready hidden><Plus aria-hidden="true" />Write a post</Button>
+	</div>
 
 	<p data-state="loading" role="status" class="m-0 text-body-md text-muted-foreground">Signing you in…</p>
 
-	<div data-state="signed-in" hidden class="flex flex-col gap-2">
-		<p class="m-0 text-body-md">Signed in as <span data-name></span></p>
-		<p class="m-0 text-body-md text-muted-foreground" data-summary></p>
+	<div data-state="ready" hidden class="flex flex-col gap-6">
+		<Callout variant="info">
+			<strong class="font-semibold">Adding an event?</strong> Events come straight from the club's Google Calendar, so add them there as usual.
+			<a slot="action" class="inline-flex min-h-11 items-center text-label text-info-foreground underline" href={googleCalendar}>Open Google Calendar</a>
+		</Callout>
+		<ul data-list aria-label="Posts" class="m-0 flex list-none flex-col gap-3 p-0"></ul>
+		<p data-empty hidden class="m-0 rounded-md bg-secondary px-6 py-5">No news posts yet. Write a post to tell members what's happening at the club.</p>
 	</div>
 
 	<div data-state="not-admin" hidden>
@@ -34,12 +48,16 @@ import AdminLayout from "../layouts/AdminLayout.astro";
 	<div data-state="error" hidden>
 		<Callout variant="error">We couldn't load the posts. Check your connection, then reload the page.</Callout>
 	</div>
+
+	<template data-row><PostRow title="" status="draft" meta="" editHref="" /></template>
+	<template data-badge="draft"><StatusBadge status="draft" /></template>
+	<template data-badge="published"><StatusBadge status="published" /></template>
 </AdminLayout>
 
 <script>
 	import { apiUrl } from "../config";
 	import { apiClient, SignInRequired } from "../lib/admin/api";
-	import { type AdminPost, describePosts } from "../lib/admin/posts";
+	import { type AdminPost, editHref, metaLine } from "../lib/admin/posts";
 	import { startSession } from "../lib/admin/session";
 
 	const show = (state: string) => {
@@ -47,10 +65,40 @@ import AdminLayout from "../layouts/AdminLayout.astro";
 			el.hidden = el.dataset.state !== state;
 		}
 	};
-	const text = (selector: string, value: string) => {
-		const el = document.querySelector(selector);
-		if (el) el.textContent = value;
-	};
+
+	function template(selector: string): DocumentFragment {
+		const t = document.querySelector<HTMLTemplateElement>(`template${selector}`);
+		if (!t) throw new Error(`admin: missing template ${selector}`);
+		return t.content.cloneNode(true) as DocumentFragment;
+	}
+
+	function row(post: AdminPost): DocumentFragment {
+		const li = template("[data-row]");
+		const link = li.querySelector<HTMLAnchorElement>("[data-title]");
+		if (link) {
+			link.textContent = post.title;
+			link.href = editHref(post.id);
+		}
+		li.querySelector("[data-status]")?.replaceChildren(
+			template(`[data-badge="${post.status === "published" ? "published" : "draft"}"]`),
+		);
+		const meta = li.querySelector("[data-meta]");
+		if (meta) meta.textContent = metaLine(post);
+		return li;
+	}
+
+	function showPosts(posts: AdminPost[]) {
+		const list = document.querySelector<HTMLUListElement>("[data-list]");
+		const empty = document.querySelector<HTMLElement>("[data-empty]");
+		if (!list || !empty) return;
+		list.replaceChildren(...posts.map(row));
+		list.hidden = posts.length === 0;
+		empty.hidden = posts.length > 0;
+		for (const el of document.querySelectorAll<HTMLElement>("[data-ready]")) {
+			el.hidden = false;
+		}
+		show("ready");
+	}
 
 	async function main() {
 		const session = await startSession();
@@ -64,7 +112,6 @@ import AdminLayout from "../layouts/AdminLayout.astro";
 				void session.signOut();
 			});
 		}
-		text("[data-name]", session.name);
 		const who = document.querySelector<HTMLElement>("[data-signed-in-as]");
 		if (who) {
 			who.textContent = session.name;
@@ -76,8 +123,7 @@ import AdminLayout from "../layouts/AdminLayout.astro";
 		if (res.status === 403) return show("not-admin");
 		if (!res.ok) return show("error");
 		const { posts } = (await res.json()) as { posts: AdminPost[] };
-		text("[data-summary]", describePosts(posts));
-		show("signed-in");
+		showPosts(posts);
 	}
 
 	main().catch((err) => {
