@@ -3,6 +3,7 @@
 // turned into Markdown only when it's saved. Saving happens by itself after
 // each pause in typing (autosave.ts); the status line says how it went.
 import { Editor } from "@tiptap/core";
+import { renderPost } from "../markdown";
 import type { Api } from "./api";
 import { Autosave, type SaveStatus } from "./autosave";
 import { el, Forbidden, type View } from "./dom";
@@ -20,6 +21,8 @@ interface StoredPost extends Draft {
 export interface EditorOptions {
 	/** Called once a new post has been saved for the first time. */
 	onCreated: (id: string) => void;
+	/** Called once the post has been deleted, to leave the editor. */
+	onDeleted: (id: string) => void;
 }
 
 const london = new Intl.DateTimeFormat("en-GB", {
@@ -44,7 +47,7 @@ function fieldError(control: HTMLElement, message: string | undefined) {
 export async function openEditor(
 	api: Api,
 	id: string | null,
-	{ onCreated }: EditorOptions,
+	{ onCreated, onDeleted }: EditorOptions,
 ): Promise<View> {
 	const view = el("[data-view=edit]");
 	const form = el<HTMLFormElement>("[data-editor-form]", view);
@@ -133,11 +136,23 @@ export async function openEditor(
 
 	let retry: ReturnType<typeof setTimeout> | undefined;
 	let isNew = !post;
+	let postId = post?.id ?? null;
+	const deleteRow = el("[data-delete-row]", view);
+	const deleteError = el("[data-delete-error]", view);
+	const deleteButton = el<HTMLButtonElement>("[data-delete]", view);
+	const previewToggle = el<HTMLButtonElement>("[data-preview-toggle]", view);
+	deleteRow.hidden = !postId;
+	deleteError.hidden = true;
+	deleteButton.disabled = false;
+	previewToggle.hidden = false;
 	const saver = new Autosave({
 		api,
 		post: post ? { id: post.id, etag } : null,
 		onCreated: (newId) => {
 			isNew = false;
+			postId = newId;
+			deleteRow.hidden = false;
+			previewToggle.hidden = false;
 			heading.textContent = "Edit post";
 			document.title = "Edit post · Club admin";
 			onCreated(newId);
@@ -191,6 +206,37 @@ export async function openEditor(
 	editor.on("update", changed);
 
 	const stopToolbar = toolbar(view, editor);
+	const stopPreview = previewer(view, form, () => ({
+		draft: draft(),
+		coverSrc: cover.src(),
+	}));
+
+	// Deleting acts at once; the list then offers Undo. Changes are saved
+	// first, so Undo brings them back too.
+	const onDelete = async () => {
+		if (!postId) return;
+		deleteButton.disabled = true;
+		deleteError.hidden = true;
+		clearTimeout(retry);
+		await saver.flush();
+		let ok = false;
+		try {
+			const res = await api(`/api/admin/posts/${encodeURIComponent(postId)}`, {
+				method: "DELETE",
+			});
+			if (res.status === 403) throw new Forbidden();
+			ok = res.ok;
+		} catch (err) {
+			if (err instanceof Forbidden) throw err;
+		}
+		if (!ok) {
+			deleteButton.disabled = false;
+			deleteError.hidden = false;
+			return;
+		}
+		onDeleted(postId);
+	};
+	deleteButton.addEventListener("click", onDelete);
 
 	const warn = (e: BeforeUnloadEvent) => {
 		if (saver.hasUnsavedChanges()) e.preventDefault();
@@ -205,6 +251,8 @@ export async function openEditor(
 			description.removeEventListener("input", changed);
 			removeEventListener("beforeunload", warn);
 			stopToolbar();
+			stopPreview();
+			deleteButton.removeEventListener("click", onDelete);
 			cover.stop();
 			editor.destroy();
 		},
@@ -318,6 +366,8 @@ function coverPicker(
 	return {
 		key: () => key,
 		alt: () => alt.value,
+		/** What to show for the cover: the photo, or "" if it can't be shown. */
+		src: () => (key ? preview || post?.coverUrl || "" : ""),
 		altTouched: () => touched,
 		showError: (message: string | undefined) =>
 			fieldError(alt, touched ? message : undefined),
@@ -328,6 +378,56 @@ function coverPicker(
 			alt.removeEventListener("input", onAlt);
 			if (preview) URL.revokeObjectURL(preview);
 		},
+	};
+}
+
+// The Preview button: swaps the form for the post as members will see it,
+// unsaved changes included, rendered by the site's own Markdown pipeline
+// (so it's sanitised the same way). A post without a cover shows the club
+// photo, as on the site.
+function previewer(
+	view: HTMLElement,
+	form: HTMLElement,
+	current: () => { draft: Draft; coverSrc: string },
+): () => void {
+	const toggle = el<HTMLButtonElement>("[data-preview-toggle]", view);
+	const label = el("[data-preview-label]", toggle);
+	const panel = el("[data-preview]", view);
+	const cover = el<HTMLImageElement>("[data-preview-cover]", panel);
+	let showing = false;
+
+	const show = async (on: boolean) => {
+		showing = on;
+		if (on) {
+			const { draft, coverSrc } = current();
+			el("[data-preview-title]", panel).textContent = draft.title.trim();
+			const description = el("[data-preview-description]", panel);
+			description.textContent = draft.description.trim();
+			description.hidden = !draft.description.trim();
+			const custom = Boolean(draft.coverImageKey && coverSrc);
+			cover.src = custom ? coverSrc : (cover.dataset.default ?? "");
+			cover.alt = custom ? (draft.coverAlt ?? "") : "";
+			// renderPost's output is sanitised, so setting it as HTML is safe.
+			el("[data-preview-body]", panel).innerHTML = await renderPost(
+				draft.bodyMd,
+			);
+		}
+		panel.hidden = !on;
+		form.hidden = on;
+		label.textContent = on ? "Back to editing" : "Preview";
+		for (const icon of toggle.querySelectorAll<SVGElement>("[data-when]")) {
+			icon.toggleAttribute(
+				"hidden",
+				icon.dataset.when !== (on ? "previewing" : "editing"),
+			);
+		}
+	};
+	const onToggle = () => void show(!showing);
+	toggle.addEventListener("click", onToggle);
+	void show(false);
+	return () => {
+		toggle.removeEventListener("click", onToggle);
+		panel.hidden = true;
 	};
 }
 
