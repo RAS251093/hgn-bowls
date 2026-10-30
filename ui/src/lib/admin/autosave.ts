@@ -63,6 +63,11 @@ export class Autosave {
 		await this.inflight;
 	}
 
+	/** Uses version (an ETag) for the next save: publishing moves the post on too. */
+	setVersion(version: string): void {
+		this.etag = version;
+	}
+
 	/** True while the latest draft hasn't reached the API. */
 	hasUnsavedChanges(): boolean {
 		return this.pending !== null && JSON.stringify(this.pending) !== this.saved;

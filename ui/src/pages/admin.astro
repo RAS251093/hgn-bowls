@@ -10,6 +10,7 @@ import {
 	ArrowLeft,
 	Bold,
 	Eye,
+	EyeOff,
 	Heading2,
 	Heading3,
 	ImagePlus,
@@ -20,6 +21,7 @@ import {
 	LogOut,
 	Pencil,
 	Plus,
+	Send,
 	TextQuote,
 	Trash,
 } from "@lucide/astro";
@@ -134,15 +136,26 @@ const tool =
 		<a href="/admin" class="inline-flex min-h-11 items-center gap-2 self-start text-label text-primary underline">
 			<ArrowLeft size={20} aria-hidden="true" />All posts
 		</a>
-		<div class="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-			<h1 data-editor-heading class="m-0 text-heading-xl text-primary">Edit post</h1>
-			<div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-				<p data-save-status role="status" class="m-0 text-body-sm text-muted-foreground"></p>
+		<div class="flex flex-col gap-4">
+			<div class="flex flex-wrap items-center gap-3">
+				<h1 data-editor-heading class="m-0 text-heading-xl text-primary">Edit post</h1>
+				<span data-editor-badge></span>
+			</div>
+			<div class="flex flex-wrap items-center gap-3">
+				<Button size="sm" data-publish hidden><Send aria-hidden="true" /><span data-publish-label>Publish post</span></Button>
+				<Button variant="outline" size="sm" data-unpublish hidden><EyeOff aria-hidden="true" />Unpublish</Button>
 				<Button variant="outline" size="sm" data-preview-toggle hidden>
 					<Eye aria-hidden="true" data-when="editing" /><Pencil aria-hidden="true" data-when="previewing" />
 					<span data-preview-label>Preview</span>
 				</Button>
+				<p data-save-status role="status" class="m-0 text-body-sm text-muted-foreground"></p>
 			</div>
+		</div>
+		<!-- How publishing is going: the website rebuild, followed until it's live. -->
+		<div data-publish-status role="status" hidden class="flex flex-wrap items-center justify-between gap-4 rounded-md px-6 py-5 data-[tone=error]:bg-destructive-tint data-[tone=error]:text-destructive data-[tone=info]:bg-info data-[tone=info]:text-info-foreground data-[tone=live]:bg-affirmative data-[tone=live]:text-affirmative-foreground">
+			<p data-publish-message class="m-0"></p>
+			<a data-publish-link hidden class="inline-flex min-h-11 items-center text-label underline">View the post</a>
+			<Button variant="outline" size="sm" data-publish-retry hidden>Try again</Button>
 		</div>
 		<div data-conflict hidden>
 			<Callout variant="error">Someone else has changed this post since you opened it, so your latest changes aren't saved. Copy anything you want to keep, then reload the page to see their version.</Callout>

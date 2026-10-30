@@ -46,3 +46,8 @@ export const auth0 = {
 	/** The API the admin's access tokens are for. */
 	audience: "https://houghgreenparkbowls.uk/api",
 };
+
+/** How often the editor checks on a website update after publishing, in ms. */
+export const deployPollMs = Number(
+	import.meta.env.PUBLIC_DEPLOY_POLL_MS ?? 4000,
+);
