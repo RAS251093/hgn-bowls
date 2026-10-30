@@ -316,3 +316,42 @@ test("a link straight to a post opens it after signing in", async ({
 	await expect(page.getByLabel("Headline")).toHaveValue("Opening day");
 	expect(new URL(page.url()).search).toBe("?post=01LIVE");
 });
+
+test("while a post loads, placeholders show where its fields will be", async ({
+	page,
+}) => {
+	await stubAuth0(page);
+	await stubApi(page);
+	let release = () => {};
+	const answered = new Promise<void>((r) => {
+		release = r;
+	});
+	await page.route(`${api}/01LIVE`, async (route) => {
+		await answered;
+		await route.fallback();
+	});
+	await page.goto("/admin");
+	await page.getByRole("link", { name: "Opening day" }).click();
+
+	const loading = page.locator("[data-editor-loading]");
+	await expect(loading).toBeVisible();
+	await expect(loading.locator("[aria-hidden=true]")).toBeVisible();
+	await expect(
+		page.getByRole("status").filter({ hasText: "Loading the post" }),
+	).toHaveCount(1);
+	await expect(page.getByLabel("Headline")).toBeHidden();
+
+	release();
+	await expect(page.getByLabel("Headline")).toHaveValue("Opening day");
+	await expect(loading).toBeHidden();
+});
+
+test("a new post needs no loading, so it shows no placeholders", async ({
+	page,
+}) => {
+	await stubAuth0(page);
+	await stubApi(page);
+	await page.goto("/admin?post=new");
+	await expect(page.getByLabel("Headline")).toBeVisible();
+	await expect(page.locator("[data-editor-loading]")).toBeHidden();
+});

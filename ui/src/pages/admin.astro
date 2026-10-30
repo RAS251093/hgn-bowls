@@ -68,7 +68,25 @@ const tool =
 			<h1 class="m-0 text-heading-xl text-primary">News posts</h1>
 			<Button href={editHref()} data-ready hidden><Plus aria-hidden="true" />Write a post</Button>
 		</div>
-		<p data-list-loading role="status" class="m-0 text-body-md text-muted-foreground">Loading the posts…</p>
+		<div data-list-loading>
+			<p role="status" class="sr-only">Loading the posts</p>
+			<!-- Placeholder rows the shape of PostRow, still, as nothing on the site loops. -->
+			<ul aria-hidden="true" class="m-0 flex list-none flex-col gap-3 p-0">
+				{
+					["w-3/5", "w-2/5", "w-2/3"].map((width) => (
+						<li class="flex items-center gap-4 rounded-lg border border-border bg-card px-5 py-4">
+							<div class="flex flex-1 flex-col gap-2">
+								<div class:list={["h-7 rounded-sm bg-secondary", width]} />
+								<div class="flex gap-3">
+									<div class="h-6 w-24 rounded-sm bg-secondary" />
+									<div class="h-6 w-32 rounded-sm bg-secondary" />
+								</div>
+							</div>
+						</li>
+					))
+				}
+			</ul>
+		</div>
 		<div data-list-error hidden>
 			<Callout variant="error">We couldn't load the posts. Check your connection, then reload the page.</Callout>
 		</div>
@@ -96,6 +114,25 @@ const tool =
 		</div>
 		<div data-editor-error hidden>
 			<Callout variant="error">We couldn't open this post. Check your connection, then reload the page.</Callout>
+		</div>
+
+		<div data-editor-loading hidden>
+			<p role="status" class="sr-only">Loading the post</p>
+			<!-- Placeholders the shape of the form below, still, as nothing on the site loops. -->
+			<div aria-hidden="true" class="flex flex-col gap-6">
+				<div class="flex flex-col gap-2">
+					<div class="h-6 w-24 rounded-sm bg-secondary" />
+					<div class="h-12 rounded-md bg-secondary" />
+				</div>
+				<div class="flex flex-col gap-2">
+					<div class="h-6 w-28 rounded-sm bg-secondary" />
+					<div class="h-30 rounded-md bg-secondary" />
+				</div>
+				<div class="flex flex-col gap-2">
+					<div class="h-6 w-16 rounded-sm bg-secondary" />
+					<div class="h-80 rounded-md bg-secondary" />
+				</div>
+			</div>
 		</div>
 
 		<form data-editor-form hidden novalidate class="flex flex-col gap-6">

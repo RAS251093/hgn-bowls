@@ -165,3 +165,32 @@ test("a list that won't load says what to do", async ({ page }) => {
 		"couldn't load the posts",
 	);
 });
+
+test("while the posts load, placeholder rows hold their place", async ({
+	page,
+}) => {
+	await stubAuth0(page);
+	let release = () => {};
+	const answered = new Promise<void>((r) => {
+		release = r;
+	});
+	await page.route("https://api.test/api/admin/posts", async (route) => {
+		await answered;
+		await route.fulfill({ json: { posts } });
+	});
+	await page.goto("/admin");
+
+	const loading = page.locator("[data-list-loading]");
+	await expect(loading).toBeVisible();
+	await expect(loading.locator("li")).toHaveCount(3);
+	// Placeholders are hidden from screen readers, which hear a status instead.
+	await expect(loading.locator("ul")).toHaveAttribute("aria-hidden", "true");
+	await expect(page.getByRole("status")).toHaveText("Loading the posts");
+	await expect(page.getByText("Loading the posts…")).toHaveCount(0);
+
+	release();
+	await expect(
+		page.getByRole("list", { name: "Posts" }).getByRole("listitem"),
+	).toHaveCount(2);
+	await expect(loading).toBeHidden();
+});

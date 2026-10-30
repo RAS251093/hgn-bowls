@@ -49,6 +49,7 @@ export async function openEditor(
 	const statusLine = el("[data-save-status]", view);
 	const conflict = el("[data-conflict]", view);
 	const loadError = el("[data-editor-error]", view);
+	const loading = el("[data-editor-loading]", view);
 	const title = el<HTMLInputElement>("#post-title", view);
 	const description = el<HTMLTextAreaElement>("#post-description", view);
 	const bodyError = el("[data-body-error]", view);
@@ -66,7 +67,12 @@ export async function openEditor(
 	let post: StoredPost | null = null;
 	let etag = "";
 	if (id) {
-		const res = await api(`/api/admin/posts/${encodeURIComponent(id)}`);
+		loading.hidden = false;
+		const res = await api(`/api/admin/posts/${encodeURIComponent(id)}`).finally(
+			() => {
+				loading.hidden = true;
+			},
+		);
 		if (res.status === 403) throw new Forbidden();
 		if (!res.ok) {
 			loadError.hidden = false;
