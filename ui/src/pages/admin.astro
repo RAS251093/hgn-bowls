@@ -161,6 +161,7 @@ const tool =
 				<p id="cover-help" class="m-0 text-body-sm text-muted-foreground">Optional. Shown at the top of the post and on the news page; without one, the club's photo of the green is used. A JPEG, PNG or WebP photo up to 10 MB.</p>
 				<div data-cover-set hidden class="flex flex-col gap-4">
 					<img data-cover-image alt="" class="aspect-video w-full rounded-lg bg-secondary object-cover" />
+					<p data-cover-unavailable hidden class="m-0 rounded-lg bg-secondary px-6 py-5 text-body-sm text-muted-foreground">This post has a cover photo, but it can't be shown right now. It's still saved with the post.</p>
 					<Field id="cover-alt" label="Describe the photo" help={`For people who can't see it, for example: Two members bowling on a sunny afternoon. Up to ${limits.coverAlt} characters.`} autocomplete="off" liveErrors />
 					<div class="flex flex-wrap gap-3">
 						<Button as="label" variant="outline" size="sm">

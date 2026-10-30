@@ -6,8 +6,12 @@ import { type AdminPost, editHref, metaLine } from "./posts";
 
 function row(post: AdminPost, defaultThumbnail: string): DocumentFragment {
 	const li = template("[data-row]");
-	el<HTMLImageElement>("[data-thumbnail]", li).src =
-		post.coverUrl ?? defaultThumbnail;
+	// A cover with no link (the API couldn't sign one) leaves the frame
+	// empty: the club photo would wrongly say the post has no cover.
+	const thumbnail = el<HTMLImageElement>("[data-thumbnail]", li);
+	const src = post.coverUrl ?? (post.coverImageKey ? "" : defaultThumbnail);
+	if (src) thumbnail.src = src;
+	thumbnail.addEventListener("error", () => thumbnail.removeAttribute("src"));
 	const link = el<HTMLAnchorElement>("[data-title]", li);
 	link.textContent = post.title;
 	link.href = editHref(post.id);

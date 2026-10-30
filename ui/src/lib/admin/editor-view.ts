@@ -236,11 +236,27 @@ function coverPicker(
 	let touched = Boolean(post?.coverAlt);
 	alt.value = post?.coverAlt ?? "";
 
+	const unavailable = el("[data-cover-unavailable]", box);
+
+	// No link (the API couldn't sign one) or a link that won't load: say
+	// so, rather than show a broken image.
+	const cantShow = () => {
+		image.hidden = true;
+		image.removeAttribute("src");
+		unavailable.hidden = false;
+	};
 	const render = () => {
 		set.hidden = !key;
 		empty.hidden = Boolean(key);
-		if (key) image.src = preview || post?.coverUrl || "";
-		else image.removeAttribute("src");
+		const src = key ? preview || post?.coverUrl : "";
+		if (!src) {
+			if (key) cantShow();
+			else image.removeAttribute("src");
+			return;
+		}
+		image.hidden = false;
+		unavailable.hidden = true;
+		image.src = src;
 	};
 	const say = (message: string) => {
 		problem.textContent = message;
@@ -289,6 +305,7 @@ function coverPicker(
 		onChange();
 	};
 
+	image.addEventListener("error", cantShow);
 	for (const f of files) f.addEventListener("change", onFile);
 	const remove = el("[data-cover-remove]", box);
 	remove.addEventListener("click", onRemove);
@@ -305,6 +322,7 @@ function coverPicker(
 		showError: (message: string | undefined) =>
 			fieldError(alt, touched ? message : undefined),
 		stop: () => {
+			image.removeEventListener("error", cantShow);
 			for (const f of files) f.removeEventListener("change", onFile);
 			remove.removeEventListener("click", onRemove);
 			alt.removeEventListener("input", onAlt);

@@ -494,3 +494,40 @@ test("a failed upload says so and leaves the post as it was", async ({
 	await page.waitForTimeout(2000);
 	expect(saves).toHaveLength(0);
 });
+
+test("a cover that can't be shown says so, instead of a broken image", async ({
+	page,
+}) => {
+	await stubAuth0(page);
+	await stubApi(page);
+	// As when the API couldn't sign a link: the key, but no coverUrl.
+	await page.route(`${api}/01LIVE`, (route) =>
+		route.fulfill({
+			headers: { ...cors, ETag: '"01LIVE-v1"' },
+			json: { ...stored, coverUrl: undefined },
+		}),
+	);
+	await openPost(page);
+	const cover = page.getByRole("group", { name: "Cover photo" });
+	await expect(cover.locator("img")).toBeHidden();
+	await expect(cover).toContainText(
+		"This post has a cover photo, but it can't be shown right now.",
+	);
+	await expect(cover.getByLabel("Describe the photo")).toHaveValue(
+		"Two bowlers on the green",
+	);
+});
+
+test("a cover link that fails to load says so too", async ({ page }) => {
+	await stubAuth0(page);
+	await stubApi(page);
+	await page.route("https://storage.test/posts/**", (route) =>
+		route.fulfill({ status: 403 }),
+	);
+	await openPost(page);
+	const cover = page.getByRole("group", { name: "Cover photo" });
+	await expect(cover).toContainText(
+		"This post has a cover photo, but it can't be shown right now.",
+	);
+	await expect(cover.locator("img")).toBeHidden();
+});

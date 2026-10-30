@@ -201,7 +201,14 @@ test("each row shows the post's cover, or the club photo the site uses without o
 	page,
 }) => {
 	await page.route("https://storage.test/**", (route) =>
-		route.fulfill({ contentType: "image/png", body: Buffer.alloc(0) }),
+		route.fulfill({
+			contentType: "image/png",
+			// A 1x1 PNG.
+			body: Buffer.from(
+				"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+				"base64",
+			),
+		}),
 	);
 	await openList(page);
 	const rows = page.getByRole("list", { name: "Posts" }).getByRole("listitem");
@@ -215,4 +222,16 @@ test("each row shows the post's cover, or the club photo the site uses without o
 		"src",
 		/two-crown-green-bowls/,
 	);
+});
+
+test("a cover that can't be shown leaves an empty frame, not the club photo", async ({
+	page,
+}) => {
+	// The key without a link, as when the API couldn't sign one.
+	await openList(page, [{ ...posts[1], coverUrl: undefined }]);
+	const thumb = page
+		.getByRole("list", { name: "Posts" })
+		.getByRole("listitem")
+		.locator("img");
+	await expect(thumb).not.toHaveAttribute("src", /.+/);
 });
