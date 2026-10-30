@@ -7,6 +7,7 @@ import { apiUrl } from "../../config";
 import { apiClient, SignInRequired } from "./api";
 import { el, Forbidden, type View } from "./dom";
 import { openEditor } from "./editor-view";
+import { showHelp } from "./help-view";
 import { showList } from "./list-view";
 import { editHref, type Route, routeOf } from "./posts";
 import { startSession } from "./session";
@@ -49,14 +50,22 @@ export async function start(): Promise<void> {
 			hideViews();
 			showState(null);
 			current =
-				route.view === "list"
-					? await showList(api)
-					: await openEditor(api, route.id, {
-							onCreated: (id) => history.replaceState(null, "", editHref(id)),
-							onDeleted: (id) => void deleted(id),
-						});
+				route.view === "help"
+					? showHelp(route.guide)
+					: route.view === "list"
+						? await showList(api)
+						: await openEditor(api, route.id, {
+								onCreated: (id) => history.replaceState(null, "", editHref(id)),
+								onDeleted: (id) => void deleted(id),
+							});
 			if (route.view === "list") document.title = "News posts · Club admin";
-			if (moved) {
+			// A guide asked for by name gets focus and scrolls into view.
+			const guide = route.view === "help" && route.guide;
+			if (guide) {
+				const heading = el(`[data-guide=${guide}] h2`);
+				heading.focus();
+				heading.scrollIntoView({ block: "start" });
+			} else if (moved) {
 				// Tell keyboard and screen reader users the view has changed.
 				scrollTo(0, 0);
 				const h1 = document.querySelector<HTMLElement>(

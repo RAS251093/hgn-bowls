@@ -9,6 +9,7 @@ import { getImage } from "astro:assets";
 import {
 	ArrowLeft,
 	Bold,
+	CircleHelp,
 	Eye,
 	EyeOff,
 	Heading2,
@@ -26,6 +27,7 @@ import {
 	Trash,
 } from "@lucide/astro";
 import defaultCover from "../assets/two-crown-green-bowls.jpg";
+import AdminGuides from "../components/admin/AdminGuides.astro";
 import Button from "../components/ui/Button.astro";
 import Callout from "../components/ui/Callout.astro";
 import Field from "../components/ui/Field.astro";
@@ -35,7 +37,7 @@ import StatusBadge from "../components/ui/StatusBadge.astro";
 import UndoToast from "../components/ui/UndoToast.astro";
 import AdminLayout from "../layouts/AdminLayout.astro";
 import { limits } from "../lib/admin/draft";
-import { editHref } from "../lib/admin/posts";
+import { editHref, helpHref } from "../lib/admin/posts";
 
 // The club photo the site shows for a post without a cover, small enough
 // for the list's thumbnails (twice their size, for sharp screens).
@@ -79,6 +81,7 @@ const tool =
 <AdminLayout title="News posts">
 	<div slot="header" class="flex flex-wrap items-center gap-x-6 gap-y-2">
 		<span data-signed-in-as hidden class="text-body-sm text-primary-muted-foreground"></span>
+		<a href={helpHref()} class="inline-flex min-h-11 items-center text-body-sm text-primary-foreground underline">Help</a>
 		<a href="/" class="inline-flex min-h-11 items-center text-body-sm text-primary-foreground underline">View website</a>
 		<Button variant="outline" size="sm" data-sign-out hidden>
 			<LogOut size={20} aria-hidden="true" />
@@ -124,7 +127,7 @@ const tool =
 		<div data-ready hidden class="flex flex-col gap-6">
 			<Callout variant="info">
 				<strong class="font-semibold">Adding an event?</strong> Events come straight from the club's Google Calendar, so add them there as usual.
-				<a slot="action" class="inline-flex min-h-11 items-center text-label text-info-foreground underline" href={googleCalendar}>Open Google Calendar</a>
+				<a slot="action" class="inline-flex min-h-11 items-center text-label text-info-foreground underline" href={helpHref("events")}>How to add an event</a>
 			</Callout>
 			<ul data-list data-default-thumbnail={defaultThumbnail.src} aria-label="Posts" class="m-0 flex list-none flex-col gap-3 p-0"></ul>
 			<p data-empty hidden class="m-0 rounded-md bg-secondary px-6 py-5">No news posts yet. Write a post to tell members what's happening at the club.</p>
@@ -133,9 +136,14 @@ const tool =
 
 	<!-- The editor. -->
 	<section data-view="edit" hidden class="flex max-w-measure flex-col gap-6">
-		<a href="/admin" class="inline-flex min-h-11 items-center gap-2 self-start text-label text-primary underline">
-			<ArrowLeft size={20} aria-hidden="true" />All posts
-		</a>
+		<div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+			<a href="/admin" class="inline-flex min-h-11 items-center gap-2 text-label text-primary underline">
+				<ArrowLeft size={20} aria-hidden="true" />All posts
+			</a>
+			<a href={helpHref("posts")} class="inline-flex min-h-11 items-center gap-2 text-label text-primary underline">
+				<CircleHelp size={20} aria-hidden="true" />How to write a post
+			</a>
+		</div>
 		<div class="flex flex-col gap-4">
 			<div class="flex flex-wrap items-center gap-3">
 				<h1 data-editor-heading class="m-0 text-heading-xl text-primary">Edit post</h1>
@@ -251,6 +259,19 @@ const tool =
 				<p data-delete-error role="alert" hidden class="m-0 text-body-sm font-medium text-destructive">We couldn't delete the post. Check your connection, then try again.</p>
 			</div>
 		</form>
+	</section>
+
+	<!-- The guides for committee members. -->
+	<section data-view="help" hidden class="flex max-w-measure flex-col gap-6">
+		<a href="/admin" class="inline-flex min-h-11 items-center gap-2 self-start text-label text-primary underline">
+			<ArrowLeft size={20} aria-hidden="true" />All posts
+		</a>
+		<h1 class="m-0 text-heading-xl text-primary">Help for club admins</h1>
+		<nav aria-label="Guides" class="flex flex-wrap gap-x-6 gap-y-2">
+			<a href={helpHref("posts")} class="inline-flex min-h-11 items-center text-label text-primary underline">Writing a news post</a>
+			<a href={helpHref("events")} class="inline-flex min-h-11 items-center text-label text-primary underline">Adding an event</a>
+		</nav>
+		<AdminGuides calendarHref={googleCalendar} />
 	</section>
 
 	<!-- One toast at a time, bottom-left (UndoToast). -->

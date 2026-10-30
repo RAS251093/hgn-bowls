@@ -51,10 +51,22 @@ export function metaLine(post: AdminPost, now: Date = new Date()): string {
 	return `Last edited ${day(edited, now)}`;
 }
 
-// The admin area is one page, so moving between the list and the editor
-// never reloads it (a reload means a trip through Auth0, as tokens live in
-// memory). ?post=<id> opens the editor for that post, ?post=new a new one.
-export type Route = { view: "list" } | { view: "edit"; id: string | null };
+// The admin area is one page, so moving between the list, the editor and
+// the help never reloads it (a reload means a trip through Auth0, as tokens
+// live in memory). ?post=<id> opens the editor for that post, ?post=new a
+// new one, and ?help the guides (?help=posts or ?help=events for one).
+export type Guide = "posts" | "events";
+export type Route =
+	| { view: "list" }
+	| { view: "edit"; id: string | null }
+	| { view: "help"; guide: Guide | null };
+
+const guides: readonly string[] = ["posts", "events"];
+
+/** The guides, or one of them. */
+export function helpHref(guide?: Guide): string {
+	return guide ? `/admin?help=${guide}` : "/admin?help";
+}
 
 /** The editor for a post; without an id, a new one. */
 export function editHref(id?: string): string {
@@ -63,7 +75,15 @@ export function editHref(id?: string): string {
 
 /** Which view a URL's query string asks for. */
 export function routeOf(search: string): Route {
-	const post = new URLSearchParams(search).get("post");
+	const params = new URLSearchParams(search);
+	if (params.has("help")) {
+		const guide = params.get("help") ?? "";
+		return {
+			view: "help",
+			guide: guides.includes(guide) ? (guide as Guide) : null,
+		};
+	}
+	const post = params.get("post");
 	if (!post) return { view: "list" };
 	return { view: "edit", id: post === "new" ? null : post };
 }

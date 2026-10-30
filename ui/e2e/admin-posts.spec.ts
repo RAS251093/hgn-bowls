@@ -105,11 +105,11 @@ test("Write a post is the page's main action", async ({ page }) => {
 	).toHaveAttribute("href", "/admin?post=new");
 });
 
-test("events are pointed to Google Calendar", async ({ page }) => {
+test("events are pointed to the guide for adding them", async ({ page }) => {
 	await openList(page);
 	await expect(
-		page.getByRole("link", { name: "Open Google Calendar" }),
-	).toHaveAttribute("href", /^https:\/\/calendar\.google\.com\//);
+		page.getByRole("link", { name: "How to add an event" }),
+	).toHaveAttribute("href", "/admin?help=events");
 });
 
 test("with no posts yet, the page says so and leads to writing one", async ({
