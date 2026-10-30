@@ -1,0 +1,84 @@
+---
+// The admin home. Everything here happens in the browser: the page signs
+// the admin in with Auth0, then reads the posts from the API with their
+// token. The HTML is the same for everyone and holds no data.
+import { LogOut } from "@lucide/astro";
+import Callout from "../components/ui/Callout.astro";
+import AdminLayout from "../layouts/AdminLayout.astro";
+---
+
+<AdminLayout title="Home">
+	<button
+		slot="header"
+		type="button"
+		data-sign-out
+		hidden
+		class="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-md border-control border-accent bg-transparent px-4 text-label text-primary-foreground transition-colors duration-120 hover:bg-primary-hover"
+	>
+		<LogOut size={20} aria-hidden="true" />
+		Sign out
+	</button>
+
+	<h1 class="m-0 text-heading-xl text-primary">Club admin</h1>
+
+	<p data-state="loading" role="status" class="m-0 text-body-md text-muted-foreground">Signing you in…</p>
+
+	<div data-state="signed-in" hidden class="flex flex-col gap-2">
+		<p class="m-0 text-body-md">Signed in as <span data-name></span></p>
+		<p class="m-0 text-body-md text-muted-foreground" data-summary></p>
+	</div>
+
+	<div data-state="not-admin" hidden>
+		<Callout variant="error">Your account isn't set up as a club admin yet. Ask the committee to add you, then sign in again.</Callout>
+	</div>
+
+	<div data-state="error" hidden>
+		<Callout variant="error">We couldn't load the posts. Check your connection, then reload the page.</Callout>
+	</div>
+</AdminLayout>
+
+<script>
+	import { apiUrl } from "../config";
+	import { apiClient, SignInRequired } from "../lib/admin/api";
+	import { type AdminPost, describePosts } from "../lib/admin/posts";
+	import { startSession } from "../lib/admin/session";
+
+	const show = (state: string) => {
+		for (const el of document.querySelectorAll<HTMLElement>("[data-state]")) {
+			el.hidden = el.dataset.state !== state;
+		}
+	};
+	const text = (selector: string, value: string) => {
+		const el = document.querySelector(selector);
+		if (el) el.textContent = value;
+	};
+
+	async function main() {
+		const session = await startSession();
+		if (!session) return; // on the way to Auth0
+
+		const signOut = document.querySelector<HTMLButtonElement>("[data-sign-out]");
+		if (signOut) {
+			signOut.hidden = false;
+			signOut.addEventListener("click", () => {
+				signOut.disabled = true;
+				void session.signOut();
+			});
+		}
+		text("[data-name]", session.name);
+
+		const api = apiClient(apiUrl, session);
+		const res = await api("/api/admin/posts");
+		if (res.status === 403) return show("not-admin");
+		if (!res.ok) return show("error");
+		const { posts } = (await res.json()) as { posts: AdminPost[] };
+		text("[data-summary]", describePosts(posts));
+		show("signed-in");
+	}
+
+	main().catch((err) => {
+		if (err instanceof SignInRequired) return;
+		console.error(err);
+		show("error");
+	});
+</script>

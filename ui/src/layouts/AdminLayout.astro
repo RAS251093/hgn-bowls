@@ -1,0 +1,42 @@
+---
+/**
+ * AdminLayout: the committee's admin area. A slim club green bar with the
+ * roundel, "Club admin" and Sign out, then the page. Kept out of search
+ * engines; there's no public nav, because admins are here to write.
+ */
+import "../styles/site.css";
+
+interface Props {
+	/** The page title, before " · Club admin". */
+	title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en-GB">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="robots" content="noindex" />
+		<title>{title} · Club admin</title>
+		<link rel="icon" type="image/svg+xml" href="/logos/hgb-roundel-green.svg" />
+		<link rel="preload" href="/fonts/atkinson-hyperlegible-next-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+		<link rel="preload" href="/fonts/atkinson-hyperlegible-next-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
+	</head>
+	<body>
+		<header class="on-primary">
+			<div class="mx-auto flex max-w-content items-center justify-between gap-4 px-4 py-3 md:px-6">
+				<a href="/admin" class="flex items-center gap-3 text-primary-foreground no-underline">
+					<img src="/logos/hgb-roundel-light.svg" alt="" width="44" height="44" class="size-11 shrink-0" />
+					<span class="text-heading-sm font-semibold">Club admin</span>
+				</a>
+				<slot name="header" />
+			</div>
+		</header>
+		<main id="main" class="mx-auto flex max-w-content flex-col gap-6 px-4 py-10 md:px-6 md:py-12">
+			<slot />
+		</main>
+	</body>
+</html>

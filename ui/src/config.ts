@@ -36,3 +36,13 @@ export const mapLinks = {
 	open: `https://www.google.com/maps/search/?api=1&query=${place}`,
 	directions: `https://www.google.com/maps/dir/?api=1&destination=${place}`,
 };
+
+/** The Auth0 tenant the admin area signs in with. Tests point it at a stub. */
+export const auth0 = {
+	domain: import.meta.env.PUBLIC_AUTH0_DOMAIN ?? "hgn-bowls.uk.auth0.com",
+	clientId:
+		import.meta.env.PUBLIC_AUTH0_CLIENT_ID ??
+		"ghYs1Bt8BnKD6mEA7HTCDSFVS8Lq9P9b",
+	/** The API the admin's access tokens are for. */
+	audience: "https://houghgreenparkbowls.uk/api",
+};
