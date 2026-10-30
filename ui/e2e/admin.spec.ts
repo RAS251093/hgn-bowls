@@ -238,3 +238,17 @@ test("the admin page is kept out of search engines", async ({ page }) => {
 	const res = await page.request.get("/admin");
 	expect(await res.text()).toContain('<meta name="robots" content="noindex">');
 });
+
+test("a reload goes through Auth0 and comes back signed in", async ({
+	page,
+}) => {
+	const stub = await stubAuth0(page);
+	await stubPosts(page);
+	await page.goto("/admin");
+	await expect(page.getByText("Signed in as Rob Smith")).toBeVisible();
+
+	await page.reload();
+	await expect(page.getByText("Signed in as Rob Smith")).toBeVisible();
+	expect(stub.calls.filter((c) => c === "GET /authorize")).toHaveLength(2);
+	expect(new URL(page.url()).search).toBe("");
+});

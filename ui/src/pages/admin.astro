@@ -3,21 +3,20 @@
 // the admin in with Auth0, then reads the posts from the API with their
 // token. The HTML is the same for everyone and holds no data.
 import { LogOut } from "@lucide/astro";
+import Button from "../components/ui/Button.astro";
 import Callout from "../components/ui/Callout.astro";
 import AdminLayout from "../layouts/AdminLayout.astro";
 ---
 
 <AdminLayout title="Home">
-	<button
-		slot="header"
-		type="button"
-		data-sign-out
-		hidden
-		class="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-md border-control border-accent bg-transparent px-4 text-label text-primary-foreground transition-colors duration-120 hover:bg-primary-hover"
-	>
-		<LogOut size={20} aria-hidden="true" />
-		Sign out
-	</button>
+	<div slot="header" class="flex flex-wrap items-center gap-x-6 gap-y-2">
+		<span data-signed-in-as hidden class="text-body-sm text-primary-muted-foreground"></span>
+		<a href="/" class="inline-flex min-h-11 items-center text-body-sm text-primary-foreground underline">View website</a>
+		<Button variant="outline" size="sm" data-sign-out hidden>
+			<LogOut size={20} aria-hidden="true" />
+			Sign out
+		</Button>
+	</div>
 
 	<h1 class="m-0 text-heading-xl text-primary">Club admin</h1>
 
@@ -66,6 +65,11 @@ import AdminLayout from "../layouts/AdminLayout.astro";
 			});
 		}
 		text("[data-name]", session.name);
+		const who = document.querySelector<HTMLElement>("[data-signed-in-as]");
+		if (who) {
+			who.textContent = session.name;
+			who.hidden = false;
+		}
 
 		const api = apiClient(apiUrl, session);
 		const res = await api("/api/admin/posts");

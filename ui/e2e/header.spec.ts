@@ -60,3 +60,11 @@ test("no page offers to join online", async ({ page }) => {
 		await expect(page.locator('a[href^="/join"]')).toHaveCount(0);
 	}
 });
+
+// Admins are sent the address; the public site doesn't advertise it.
+test("no public page links to the admin area", async ({ page }) => {
+	for (const path of ["/", "/whats-on", "/news", "/news/sample-opening-day"]) {
+		await page.goto(path);
+		await expect(page.locator('a[href^="/admin"]')).toHaveCount(0);
+	}
+});

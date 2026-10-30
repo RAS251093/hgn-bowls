@@ -1,8 +1,12 @@
 ---
 /**
  * AdminLayout: the committee's admin area. A slim club green bar with the
- * roundel, "Club admin" and Sign out, then the page. Kept out of search
- * engines; there's no public nav, because admins are here to write.
+ * roundel and "Club admin", then whatever the page puts in its header slot
+ * (who's signed in, View website, Sign out). Kept out of search engines and
+ * not linked from the public site; admins are sent the address.
+ *
+ * No font preloads: the page often hands straight over to Auth0 before it
+ * draws any text, and the browser warns about preloads that go unused.
  */
 import "../styles/site.css";
 
@@ -22,12 +26,10 @@ const { title } = Astro.props;
 		<meta name="robots" content="noindex" />
 		<title>{title} · Club admin</title>
 		<link rel="icon" type="image/svg+xml" href="/logos/hgb-roundel-green.svg" />
-		<link rel="preload" href="/fonts/atkinson-hyperlegible-next-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
-		<link rel="preload" href="/fonts/atkinson-hyperlegible-next-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
 	</head>
 	<body>
 		<header class="on-primary">
-			<div class="mx-auto flex max-w-content items-center justify-between gap-4 px-4 py-3 md:px-6">
+			<div class="mx-auto flex max-w-content flex-wrap items-center justify-between gap-4 px-4 py-3 md:px-6">
 				<a href="/admin" class="flex items-center gap-3 text-primary-foreground no-underline">
 					<img src="/logos/hgb-roundel-light.svg" alt="" width="44" height="44" class="size-11 shrink-0" />
 					<span class="text-heading-sm font-semibold">Club admin</span>
