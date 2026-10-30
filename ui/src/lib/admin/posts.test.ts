@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { type AdminPost, editHref, metaLine } from "./posts.ts";
+import { type AdminPost, editHref, metaLine, routeOf } from "./posts.ts";
 
 const now = new Date("2026-10-30T15:00:00Z"); // 4pm in London (GMT)
 
@@ -72,11 +72,31 @@ describe("metaLine", () => {
 });
 
 describe("editHref", () => {
-	test("links to the editor for that post", () => {
-		assert.equal(editHref("01ABC"), "/admin/edit?id=01ABC");
+	test("links to the editor for that post, on the one admin page", () => {
+		assert.equal(editHref("01ABC"), "/admin?post=01ABC");
+	});
+
+	test("without an id, a new post", () => {
+		assert.equal(editHref(), "/admin?post=new");
 	});
 
 	test("escapes the id", () => {
-		assert.equal(editHref("a&b"), "/admin/edit?id=a%26b");
+		assert.equal(editHref("a&b"), "/admin?post=a%26b");
+	});
+});
+
+describe("routeOf", () => {
+	test("the admin page shows the list, or the editor for ?post=", () => {
+		assert.deepEqual(routeOf(""), { view: "list" });
+		assert.deepEqual(routeOf("?post=01ABC"), { view: "edit", id: "01ABC" });
+		assert.deepEqual(routeOf("?post=new"), { view: "edit", id: null });
+		assert.deepEqual(routeOf("?post="), { view: "list" });
+	});
+
+	test("reads its own links back", () => {
+		assert.deepEqual(routeOf(new URL(editHref("a&b"), "https://x").search), {
+			view: "edit",
+			id: "a&b",
+		});
 	});
 });

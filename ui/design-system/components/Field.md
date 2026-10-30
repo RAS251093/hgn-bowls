@@ -8,7 +8,8 @@
 <Field id="contact" label="Email or phone number" required error="Enter an email address or a phone number so we can reply" />
 ```
 
-**Props:** `id` and `label` (required), `help`, `error`, `multiline`, `rows`, plus any `<input>` attribute (`type`, `autocomplete`, `value`…). Help and error are wired to the control with `aria-describedby`; an error sets `aria-invalid`.
+**Props:** `id` and `label` (required), `help`, `error`, `multiline`, `rows`, `liveErrors`, plus any `<input>` attribute (`type`, `autocomplete`, `value`…). Help and error are wired to the control with `aria-describedby`; an error sets `aria-invalid`.
+- The error styling follows `aria-invalid`, not the `error` prop, so a script can show an error as the admin types: with `liveErrors` the field always renders its (hidden, empty) message as `data-field-error`, and the script sets `aria-invalid="true"`, fills `[data-message]` and unhides it.
 - Labels sit above the field in `text-label`, 1 to 3 words, sentence case. Never use a placeholder as the label.
 - Only required fields are marked, with an asterisk.
 - Field edges are 1.5px `border-input` (3:1 or better on every ground) with `rounded-md` corners; hover and focus turn them `border-primary`.
