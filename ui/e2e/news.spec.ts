@@ -72,6 +72,26 @@ test("a post without a cover shows the club photo, as decoration", async ({
 	await expect(cover).toHaveAttribute("src", /two-crown-green-bowls/);
 });
 
+// Covers are cropped to their frame and resized at build. Real covers are
+// remote and big (a 3130x1565 photo), so every size here is set
+// explicitly, never taken from the original.
+test("covers are cropped and resized to their frame", async ({ page }) => {
+	await page.goto("/news/sample-opening-day");
+	const cover = page.locator("main > article picture img");
+	await expect(cover).toHaveAttribute("width", "1000");
+	await expect(cover).toHaveAttribute("height", "563");
+	await expect(cover).toHaveAttribute("src", /\.jpg$/);
+
+	await page.goto("/news");
+	const card = page.locator("article img").first();
+	await expect(card).toHaveAttribute("width", "720");
+	await expect(card).toHaveAttribute("height", "480");
+	const widths = (await card.getAttribute("srcset"))
+		?.split(",")
+		.map((s) => s.trim().split(" ")[1]);
+	expect(widths).toEqual(["360w", "560w", "720w"]);
+});
+
 test("the home page shows the latest three posts", async ({ page }) => {
 	await page.goto("/");
 	const news = page.getByRole("region", { name: "Club news" });

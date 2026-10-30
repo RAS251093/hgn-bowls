@@ -33,7 +33,11 @@ const {
 } = Astro.props;
 const Heading = `h${level}` as const;
 const remote = typeof image === "string";
+// Explicit sizes, cropped to 3:2: a remote cover's own size would otherwise carry through.
 const sizing = {
+	width: 720,
+	height: 480,
+	fit: "cover" as const,
 	widths: [360, 560, 720],
 	sizes: "(min-width: 1024px) 360px, (min-width: 640px) 50vw, 100vw",
 	class: "block aspect-3/2 w-full object-cover",

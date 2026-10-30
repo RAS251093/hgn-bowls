@@ -11,14 +11,22 @@ import remarkRehype from "remark-rehype";
 import { unified } from "unified";
 import { rehypeYoutube, remarkYoutubeIframes } from "./youtube.ts";
 
-// The post title is the page's only h1, so a "# heading" in the body
-// becomes an h2, the same as the editor's subheadings.
-function noSecondH1() {
+// The post title is the page's only h1, so body headings start at h2 (a
+// "# heading" becomes h2, the same as the editor's subheadings), and none
+// is more than one level below the heading before it. Screen reader users
+// move by headings, and authors pick levels by how big they look.
+function tidyHeadings() {
 	return (tree: Root) => {
+		let previous = 1;
 		const visit = (node: Root | Element) => {
 			for (const child of node.children) {
 				if (child.type !== "element") continue;
-				if (child.tagName === "h1") child.tagName = "h2";
+				const m = /^h([1-6])$/.exec(child.tagName);
+				if (m) {
+					const level = Math.min(Math.max(Number(m[1]), 2), previous + 1);
+					child.tagName = `h${level}`;
+					previous = level;
+				}
 				visit(child);
 			}
 		};
@@ -41,7 +49,7 @@ export async function renderPost(
 		.use(remarkYoutubeIframes) // a YouTube embed iframe becomes a link, before raw HTML is dropped
 		.use(remarkRehype) // no allowDangerousHtml: raw HTML never reaches the output
 		.use(rehypeSanitize)
-		.use(noSecondH1)
+		.use(tidyHeadings)
 		.use(rehypeYoutube, { fetch: get }) // after sanitising: the player markup is ours
 		.use(rehypeStringify);
 	return String(await processor.process(markdown));

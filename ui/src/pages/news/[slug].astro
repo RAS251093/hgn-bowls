@@ -29,10 +29,15 @@ const entry = await getEntry("posts", post.slug);
 if (!entry) throw new Error(`news: no entry for ${post.slug}`);
 const { Content } = await render(entry);
 const cover = coverOf(post);
+// Sizes are explicit because a real cover is a remote photo, whose own
+// size would otherwise carry through. fit: cover crops to 16:9.
 const picture = {
 	alt: cover.alt,
 	formats: ["avif", "webp"] as ("avif" | "webp")[],
+	fallbackFormat: "jpg" as const,
 	width: 1000,
+	height: 563,
+	fit: "cover" as const,
 	widths: [480, 720, 1000],
 	sizes: "(min-width: 1048px) 1000px, 100vw",
 	loading: "eager" as const,

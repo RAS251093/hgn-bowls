@@ -20,6 +20,24 @@ describe("renderPost", () => {
 		assert.doesNotMatch(html, /<h1/);
 	});
 
+	// Screen reader users jump between headings, so levels mustn't skip.
+	// Both imported posts did: h3 straight after the title, h5 after an h2.
+	test("headings never skip a level", async () => {
+		const html = await renderPost(
+			"### Indoor courses\n\n#### Who\n\n## AGM\n\n##### To register\n\n### Maintenance",
+		);
+		const levels = [...html.matchAll(/<(h\d)>([^<]+)</g)].map(
+			(m) => `${m[1]} ${m[2]}`,
+		);
+		assert.deepEqual(levels, [
+			"h2 Indoor courses",
+			"h3 Who",
+			"h2 AGM",
+			"h3 To register",
+			"h3 Maintenance",
+		]);
+	});
+
 	test("a pasted address becomes a link", async () => {
 		const html = await renderPost(
 			"Watch it here: https://youtu.be/LegryDpTHXo",
