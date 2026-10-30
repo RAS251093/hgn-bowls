@@ -10,6 +10,7 @@ import { openEditor } from "./editor-view";
 import { showList } from "./list-view";
 import { editHref, type Route, routeOf } from "./posts";
 import { startSession } from "./session";
+import { showUndo } from "./toast";
 
 function showState(state: "loading" | "not-admin" | null) {
 	for (const s of document.querySelectorAll<HTMLElement>("[data-state]")) {
@@ -52,6 +53,7 @@ export async function start(): Promise<void> {
 					? await showList(api)
 					: await openEditor(api, route.id, {
 							onCreated: (id) => history.replaceState(null, "", editHref(id)),
+							onDeleted: (id) => void deleted(id),
 						});
 			if (route.view === "list") document.title = "News posts · Club admin";
 			if (moved) {
@@ -63,6 +65,19 @@ export async function start(): Promise<void> {
 				h1?.setAttribute("tabindex", "-1");
 				h1?.focus();
 			}
+		};
+
+		// Back to the list, which offers Undo. The editor's history entry
+		// becomes the list, so Back doesn't return to a deleted post.
+		const deleted = async (id: string) => {
+			history.replaceState(null, "", "/admin");
+			await go({ view: "list" }, true);
+			showUndo("Post deleted", async () => {
+				await api(`/api/admin/posts/${encodeURIComponent(id)}/restore`, {
+					method: "POST",
+				});
+				await go({ view: "list" }, false);
+			});
 		};
 
 		// One move at a time, so leaving a view (and saving) finishes first.
