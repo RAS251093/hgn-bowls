@@ -14,9 +14,11 @@ interface Props {
 	description: string;
 	/** The nav item to mark as the current page. */
 	current?: "Home" | "What's on" | "News" | "Find us";
+	/** Keep the page out of search engines (the 404 page). */
+	noindex?: boolean;
 }
 
-const { title, description, current } = Astro.props;
+const { title, description, current, noindex = false } = Astro.props;
 const fullTitle =
 	current === "Home"
 		? "Hough Green Park Bowls Club"
@@ -33,7 +35,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>{fullTitle}</title>
 		<meta name="description" content={description} />
-		<link rel="canonical" href={canonical} />
+		{noindex ? <meta name="robots" content="noindex" /> : <link rel="canonical" href={canonical} />}
 		<link rel="icon" type="image/svg+xml" href="/logos/hgb-roundel-green.svg" />
 		<link rel="preload" href="/fonts/atkinson-hyperlegible-next-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
 		<link rel="preload" href="/fonts/atkinson-hyperlegible-next-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
