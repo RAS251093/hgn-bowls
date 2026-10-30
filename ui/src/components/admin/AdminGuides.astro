@@ -1,0 +1,80 @@
+---
+/**
+ * AdminGuides: the two one-page guides for committee members, shown in the
+ * admin area's Help view (/admin?help). Written for people who've never
+ * used the admin before: short steps, the exact words on the buttons.
+ */
+import { club } from "../../config";
+import { proseClass } from "../ui/prose";
+
+interface Props {
+	/** Google Calendar, where admins add events. */
+	calendarHref: string;
+}
+
+const { calendarHref } = Astro.props;
+const address = `${club.name}, ${club.street}, ${club.town}`;
+const guide =
+	"flex scroll-mt-6 flex-col gap-6 rounded-lg border border-border bg-card p-6 md:p-8";
+const heading = "m-0 text-heading-xl text-primary focus:outline-none";
+---
+
+<section id="guide-posts" data-guide="posts" aria-labelledby="guide-posts-title" class={guide}>
+	<h2 id="guide-posts-title" tabindex="-1" class={heading}>Writing a news post</h2>
+	<div class={proseClass}>
+		<p>News posts appear on the website's News page and on the home page. You can save a post as a draft and come back to it; nobody sees it until you publish it.</p>
+
+		<h3>1. Start a post</h3>
+		<p>On the News posts page, press <strong>Write a post</strong>. Give it a <strong>Headline</strong> (up to 120 characters) and a <strong>Description</strong>: a sentence or two that appears under the headline and on the News page.</p>
+
+		<h3>2. Add a cover photo (optional)</h3>
+		<p>Press <strong>Add a cover photo</strong> and choose a JPEG, PNG or WebP photo up to 10 MB. Then fill in <strong>Describe the photo</strong> for people who can't see it, for example "Two members bowling on a sunny afternoon". Without a cover, the website uses the club's photo of the green.</p>
+
+		<h3>3. Write the post</h3>
+		<p>Type as you would in an email. The buttons above the post format it:</p>
+		<ul>
+			<li><strong>Subheading</strong> breaks a long post into parts.</li>
+			<li><strong>Bold</strong> and <strong>Italic</strong> pick out a word or two; use them sparingly.</li>
+			<li><strong>Link</strong>: select some words, press Link, type the web address (like example.org) and press <strong>Add link</strong>.</li>
+			<li><strong>Bulleted list</strong>, <strong>Numbered list</strong> and <strong>Quote</strong> do what they say.</li>
+		</ul>
+		<p>To show a video, paste its YouTube link on a line of its own. It appears as a video on the website.</p>
+
+		<h3>4. It saves as you go</h3>
+		<p>There's no Save button. A moment after you stop typing, the line by the buttons says <strong>Saved</strong> and the time. If it says "Not saved", follow what it says, for example adding a headline or describing the photo.</p>
+		<p>If someone else changes the same post while you have it open, the editor stops saving and tells you. Copy anything you want to keep, then reload the page.</p>
+
+		<h3>5. Check it, then publish</h3>
+		<p>Press <strong>Preview</strong> to see the post as members will see it, and <strong>Back to editing</strong> to carry on. When you're happy, press <strong>Publish post</strong>. The website updates in a minute or two; the editor shows "Updating the website…" and then "Live on the website", with a link to the post.</p>
+
+		<h3>6. Changing or removing a post</h3>
+		<p>Open the post from the News posts page and edit it. Changes to a live post are saved straight away but only reach the website when you press <strong>Update the website</strong>.</p>
+		<p><strong>Unpublish</strong> takes a post off the website but keeps it as a draft. <strong>Delete post</strong>, at the bottom of the editor, removes it; for a few seconds afterwards you can press <strong>Undo</strong> to bring it back.</p>
+	</div>
+</section>
+
+<section id="guide-events" data-guide="events" aria-labelledby="guide-events-title" class={guide}>
+	<h2 id="guide-events-title" tabindex="-1" class={heading}>Adding an event</h2>
+	<div class={proseClass}>
+		<p>The What's on page and the home page show the next events from the club's Google Calendar, so you add and change events there, not here. The website catches up within a minute or two.</p>
+
+		<h3>1. Open the club's calendar</h3>
+		<p><a href={calendarHref}>Open Google Calendar</a>, signed in to the Google account the club's calendar is shared with. If you can't see the club's calendar in the list on the left, ask the committee to share it with you, with permission to make changes to events.</p>
+
+		<h3>2. Create the event</h3>
+		<p>Press <strong>Create</strong> (or click on the day), then choose the club's calendar from the list under the title, not your own. Fill in:</p>
+		<ul>
+			<li><strong>Title</strong>: short and clear, like "Open day" or "League match v Widnes".</li>
+			<li><strong>Date and time</strong>, or tick <strong>All day</strong>.</li>
+			<li><strong>Location</strong>: where it is. For the club, use "{address}".</li>
+			<li><strong>Description</strong>: a few plain sentences: what it is, who it's for, what to bring. Bold, colours and pictures don't show on the website.</li>
+		</ul>
+		<p>For something every week, like a coaching session, set it to repeat (for example "Weekly on Saturday") instead of adding each one.</p>
+
+		<h3>3. Save and check</h3>
+		<p>Press <strong>Save</strong>. After a minute or two, check the What's on page on the website.</p>
+
+		<h3>4. Changing or cancelling</h3>
+		<p>Open the event in Google Calendar and change it, or delete it to take it off the website. For a cancellation members should notice, you could keep the event and start its title with "Cancelled:".</p>
+	</div>
+</section>

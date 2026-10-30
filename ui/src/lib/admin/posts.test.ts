@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { type AdminPost, editHref, metaLine, routeOf } from "./posts.ts";
+import {
+	type AdminPost,
+	editHref,
+	helpHref,
+	metaLine,
+	routeOf,
+} from "./posts.ts";
 
 const now = new Date("2026-10-30T15:00:00Z"); // 4pm in London (GMT)
 
@@ -97,6 +103,27 @@ describe("routeOf", () => {
 		assert.deepEqual(routeOf(new URL(editHref("a&b"), "https://x").search), {
 			view: "edit",
 			id: "a&b",
+		});
+	});
+});
+
+describe("help", () => {
+	test("?help opens the guides, ?help=<guide> one of them", () => {
+		assert.deepEqual(routeOf("?help"), { view: "help", guide: null });
+		assert.deepEqual(routeOf("?help=events"), {
+			view: "help",
+			guide: "events",
+		});
+		assert.deepEqual(routeOf("?help=posts"), { view: "help", guide: "posts" });
+		assert.deepEqual(routeOf("?help=nonsense"), { view: "help", guide: null });
+	});
+
+	test("links read back as the same guide", () => {
+		assert.equal(helpHref(), "/admin?help");
+		assert.equal(helpHref("events"), "/admin?help=events");
+		assert.deepEqual(routeOf(new URL(helpHref("posts"), "https://x").search), {
+			view: "help",
+			guide: "posts",
 		});
 	});
 });
