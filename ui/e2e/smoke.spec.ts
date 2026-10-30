@@ -69,3 +69,26 @@ test("the design system page isn't part of the built site", async ({
 }) => {
 	expect((await request.get("/design-system")).status()).toBe(404);
 });
+
+// Without a 404 page, Cloudflare Pages answers every unknown address with
+// the home page and a 200, as if the site were a single-page app.
+test("an unknown address gets a 404 page that leads back into the site", async ({
+	page,
+}) => {
+	await page.route("https://api.test/api/events*", (route) =>
+		route.fulfill({ json: { events: [], stale: false } }),
+	);
+	const res = await page.goto("/no-such-page");
+	expect(res?.status()).toBe(404);
+	await expect(page).toHaveTitle(/Page not found/);
+	await expect(
+		page.getByRole("heading", { level: 1, name: "Page not found" }),
+	).toBeVisible();
+	await expect(
+		page.getByRole("main").getByRole("link", { name: "Go to the home page" }),
+	).toHaveAttribute("href", "/");
+	await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+		"content",
+		"noindex",
+	);
+});

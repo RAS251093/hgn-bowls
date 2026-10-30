@@ -1,0 +1,24 @@
+---
+// Served by Cloudflare Pages, with a 404 status, for any address the site
+// doesn't have. Without it, Pages would answer with the home page.
+import Button from "../components/ui/Button.astro";
+import Hero from "../components/ui/Hero.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Page not found" description="We couldn't find that page." noindex>
+	<Hero title="Page not found" lede="We couldn't find that page. It may have moved, or the address may have a typo in it.">
+		<Fragment slot="actions">
+			<Button variant="accent" href="/">Go to the home page</Button>
+			<Button variant="outline" href="/news">Read the club news</Button>
+		</Fragment>
+	</Hero>
+	<section aria-labelledby="elsewhere" class="mx-auto flex max-w-content flex-col gap-4 px-4 py-16 md:px-6 md:py-20">
+		<h2 id="elsewhere" class="m-0 text-heading-lg text-primary">Looking for something else?</h2>
+		<ul class="m-0 flex list-none flex-col gap-2 p-0 text-body-lg">
+			<li><a href="/whats-on" class="text-primary underline">What's on at the club</a></li>
+			<li><a href="/news" class="text-primary underline">Club news</a></li>
+			<li><a href="/#find-us" class="text-primary underline">How to find us</a></li>
+		</ul>
+	</section>
+</BaseLayout>
