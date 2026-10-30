@@ -273,4 +273,16 @@ describe("Autosave", () => {
 		await saver.flush();
 		assert.equal(saver.hasUnsavedChanges(), false);
 	});
+
+	test("a version from elsewhere (publishing) is used for the next save", async () => {
+		const { saver, calls, last } = setup([{ status: 200, etag: '"v3"' }], {
+			id: "01OLD",
+			etag: '"v1"',
+		});
+		saver.setVersion('"v2"'); // publishing moved the post on
+		saver.update(draft());
+		await saver.flush();
+		assert.equal(calls[0].ifMatch, '"v2"');
+		assert.equal(last()?.kind, "saved");
+	});
 });

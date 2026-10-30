@@ -22,6 +22,7 @@ export default defineConfig({
 			PUBLIC_API_URL: "https://api.test",
 			PUBLIC_AUTH0_DOMAIN: "auth.test",
 			PUBLIC_AUTH0_CLIENT_ID: "test-client",
+			PUBLIC_DEPLOY_POLL_MS: "100",
 		},
 		reuseExistingServer: !process.env.CI,
 		timeout: 120_000,

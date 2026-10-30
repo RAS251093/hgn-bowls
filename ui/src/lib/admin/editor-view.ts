@@ -10,10 +10,13 @@ import { el, Forbidden, type View } from "./dom";
 import { type Draft, type FieldErrors, validateDraft } from "./draft";
 import { linkAddress } from "./links";
 import { editorExtensions, fromMarkdown, toMarkdown } from "./markdown";
+import { publisher } from "./publish";
 import { UploadError, uploadImage } from "./upload";
 
 interface StoredPost extends Draft {
 	id: string;
+	status: "draft" | "published";
+	slug: string | null;
 	/** A link to the cover valid for an hour. */
 	coverUrl?: string;
 }
@@ -153,6 +156,7 @@ export async function openEditor(
 			postId = newId;
 			deleteRow.hidden = false;
 			previewToggle.hidden = false;
+			publishing.render();
 			heading.textContent = "Edit post";
 			document.title = "Edit post · Club admin";
 			onCreated(newId);
@@ -191,6 +195,33 @@ export async function openEditor(
 			return "Describe the cover photo to save";
 		return "Not saved. Check the highlighted fields.";
 	};
+
+	const publishing = publisher(view, api, {
+		id: () => postId,
+		status: post?.status ?? "draft",
+		slug: post?.slug ?? null,
+		setVersion: (etag) => saver.setVersion(etag),
+		// Saved, and nothing to fix, before anything goes on the website.
+		ready: async () => {
+			const errors = validateDraft(draft());
+			if (Object.keys(errors).length > 0) {
+				titleTouched = true;
+				cover.touch();
+				showErrors(errors);
+				publishing.blocked("Fix the highlighted fields, then publish.");
+				return false;
+			}
+			clearTimeout(retry);
+			await saver.flush();
+			if (saver.hasUnsavedChanges()) {
+				publishing.blocked(
+					"The post isn't saved yet, so it can't be published. Check your connection, then try again.",
+				);
+				return false;
+			}
+			return true;
+		},
+	});
 
 	const changed = () => {
 		const d = draft();
@@ -252,6 +283,7 @@ export async function openEditor(
 			removeEventListener("beforeunload", warn);
 			stopToolbar();
 			stopPreview();
+			publishing.stop();
 			deleteButton.removeEventListener("click", onDelete);
 			cover.stop();
 			editor.destroy();
@@ -369,6 +401,10 @@ function coverPicker(
 		/** What to show for the cover: the photo, or "" if it can't be shown. */
 		src: () => (key ? preview || post?.coverUrl || "" : ""),
 		altTouched: () => touched,
+		/** Shows the description's problems even if it hasn't been typed in. */
+		touch: () => {
+			touched = true;
+		},
 		showError: (message: string | undefined) =>
 			fieldError(alt, touched ? message : undefined),
 		stop: () => {
