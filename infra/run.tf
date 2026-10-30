@@ -5,8 +5,8 @@ resource "google_service_account" "api" {
 
 locals {
   # Browsers may call the API from the site, any Pages preview of it (each
-  # gets its own subdomain) and local dev. The bucket and Auth0 only need
-  # the site itself.
+  # gets its own subdomain) and local dev. The admin page signs in from the
+  # same places (auth0.tf); the bucket only needs the site itself.
   api_origins = concat(var.allowed_origins, [
     "https://*.${var.pages_project}.pages.dev",
     "http://localhost:4321",

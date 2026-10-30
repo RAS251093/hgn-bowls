@@ -2,8 +2,10 @@
 # with were created by hand; everything else here is managed.
 
 locals {
-  # Where the admin page can start sign-in from. Local dev uses Astro's port.
-  admin_origins = concat(var.allowed_origins, ["http://localhost:4321"])
+  # Where the admin page can start sign-in from: the site, its Pages
+  # previews (Auth0 allows a wildcard subdomain) and local dev. The same
+  # list the API accepts.
+  admin_origins = local.api_origins
 }
 
 # The Go API. Tokens for it carry a permissions claim (RBAC) and last 10
