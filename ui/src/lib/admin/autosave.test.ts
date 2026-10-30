@@ -78,6 +78,37 @@ describe("validateDraft", () => {
 	});
 });
 
+describe("validateDraft: the cover", () => {
+	test("a cover needs a description for people who can't see it", () => {
+		assert.deepEqual(
+			validateDraft(draft({ coverImageKey: "posts/x.jpg", coverAlt: " " })),
+			{ coverAlt: "Describe the photo for people who can't see it" },
+		);
+		assert.deepEqual(
+			validateDraft(
+				draft({ coverImageKey: "posts/x.jpg", coverAlt: "Two bowlers" }),
+			),
+			{},
+		);
+	});
+
+	test("the description has the API's limit", () => {
+		assert.deepEqual(
+			validateDraft(
+				draft({ coverImageKey: "posts/x.jpg", coverAlt: "a".repeat(301) }),
+			),
+			{ coverAlt: "Keep the description to 300 characters or fewer" },
+		);
+	});
+
+	test("no cover, no description needed", () => {
+		assert.deepEqual(
+			validateDraft(draft({ coverImageKey: null, coverAlt: null })),
+			{},
+		);
+	});
+});
+
 describe("Autosave", () => {
 	test("a new post is created on its first save, then updated with If-Match", async () => {
 		const { saver, calls, created, last } = setup([

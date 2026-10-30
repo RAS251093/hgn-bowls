@@ -375,3 +375,45 @@ func TestStoreErrorIs500(t *testing.T) {
 		t.Errorf("store failure: %d %s; want 500 without internals", r.status, r.body)
 	}
 }
+
+// The editor and the list show the cover, so admin responses carry a
+// short-lived link to it. Signing trouble mustn't stop anyone editing.
+func TestAdminResponsesLinkTheCover(t *testing.T) {
+	e := newEnv(t)
+	const url = "https://storage.example/posts/2026/04/x.jpg?sig"
+	created := e.do("POST", "/api/admin/posts", `{"title":"With cover","coverImageKey":"posts/2026/04/x.jpg","coverAlt":"The green"}`)
+	e.create("No cover")
+
+	if got := decodeAs[Post](t, created).CoverURL; got == nil || *got != url {
+		t.Errorf("create: coverUrl = %v, want %s", got, url)
+	}
+	if got := decodeAs[Post](t, e.do("GET", "/api/admin/posts/p1", "")).CoverURL; got == nil || *got != url {
+		t.Errorf("get: coverUrl = %v, want %s", got, url)
+	}
+	updated := e.do("PUT", "/api/admin/posts/p1", `{"title":"With cover","coverImageKey":"posts/2026/04/x.jpg","coverAlt":"The green"}`,
+		"If-Match", created.header.Get("ETag"))
+	if got := decodeAs[Post](t, updated).CoverURL; got == nil || *got != url {
+		t.Errorf("update: coverUrl = %v, want %s", got, url)
+	}
+
+	list := decodeAs[struct{ Posts []Post }](t, e.do("GET", "/api/admin/posts", "")).Posts
+	links := map[string]*string{}
+	for _, p := range list {
+		links[p.Title] = p.CoverURL
+	}
+	if got := links["With cover"]; got == nil || *got != url {
+		t.Errorf("list: coverUrl = %v, want %s", got, url)
+	}
+	if got := links["No cover"]; got != nil {
+		t.Errorf("list: a post without a cover has coverUrl %q", *got)
+	}
+
+	e.images.err = errors.New("no signing rights")
+	r := e.do("GET", "/api/admin/posts/p1", "")
+	if r.status != http.StatusOK {
+		t.Fatalf("get with signing failing: status %d, want 200", r.status)
+	}
+	if p := decodeAs[Post](t, r); p.CoverURL != nil || p.CoverImageKey == nil {
+		t.Errorf("get with signing failing: coverUrl %v, key %v; want no link but the key kept", p.CoverURL, p.CoverImageKey)
+	}
+}

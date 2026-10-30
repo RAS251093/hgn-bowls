@@ -23,6 +23,15 @@
 	}
 }
 
+/* A label standing in for a hidden input (a file picker styled as a
+   button): the focus ring shows on the label the input sits in. */
+@utility focus-ring-within-input {
+	&:has(input:focus-visible) {
+		outline: var(--ring-width) solid var(--ring);
+		outline-offset: 2px;
+	}
+}
+
 /* The post editor's box: its one focus ring goes round the whole rounded
    box while the text area inside has focus, rather than square inside it. */
 @utility focus-ring-within-editor {

@@ -103,7 +103,7 @@ Lucide, outlined, 2px stroke, `currentColor`, 20px in buttons and messages (24px
 
 ## 9. Components
 
-Components are Astro components in `src/components/ui/`, styled with Tailwind utilities generated from the tokens. Each guide in `design-system/components/` gives the props and when to use it; `/design-system` renders all of them (not linked, not indexed).
+Components are Astro components in `src/components/ui/`, styled with Tailwind utilities generated from the tokens. Each guide in `design-system/components/` gives the props and when to use it; `/design-system` renders all of them under `npm run dev` only; it's never built, so visitors can't reach it.
 - Navigation: SiteHeader, Hero, SiteFooter
 - Actions: Button (`primary`, `accent`, `outline`, `destructive`; default and `sm`)
 - Content: EventList, NewsCard, StepList, MembershipCard, Faq, Prose
@@ -150,7 +150,7 @@ These read as generated and are out: tracked capital eyebrows above headings, nu
 | `src/styles/site.css`           | The site stylesheet: Tailwind, the tokens, the `on-primary` variant and base styles                        |
 | `src/components/ui/`            | The components                                                                                             |
 | `design-system/components/*.md` | Usage guide for each component                                                                             |
-| `src/pages/design-system.astro` | Every component on one page, for checking changes                                                          |
+| `src/dev/design-system.astro`   | Every component on one page, for checking changes (`npm run dev` only)                                     |
 | `public/logos/`                 | The roundel, light (on green) and green (on light grounds)                                                 |
 | `public/fonts/`                 | Atkinson Hyperlegible Next 400, 500 and 600 (SIL Open Font License)                                        |
 

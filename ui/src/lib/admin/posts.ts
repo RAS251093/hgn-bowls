@@ -7,6 +7,9 @@ export interface AdminPost {
 	/** Kept when a post is unpublished, so a draft may have one. */
 	publishedAt: string | null;
 	updatedAt: string;
+	coverImageKey?: string | null;
+	/** A link to the cover valid for an hour, when the post has one. */
+	coverUrl?: string;
 }
 
 const london = (o: Intl.DateTimeFormatOptions) =>

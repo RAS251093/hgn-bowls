@@ -18,6 +18,8 @@ const posts = [
 		status: "published",
 		publishedAt: "2025-04-05T09:00:00.000000Z",
 		updatedAt: "2025-04-05T09:00:00.000000Z",
+		coverImageKey: "posts/01COVER.jpg",
+		coverUrl: "https://storage.test/posts/01COVER.jpg?sig",
 	},
 ];
 
@@ -193,4 +195,50 @@ test("while the posts load, placeholder rows hold their place", async ({
 		page.getByRole("list", { name: "Posts" }).getByRole("listitem"),
 	).toHaveCount(2);
 	await expect(loading).toBeHidden();
+});
+
+test("each row shows the post's cover, or the club photo the site uses without one", async ({
+	page,
+}) => {
+	await page.route("https://storage.test/**", (route) =>
+		route.fulfill({
+			contentType: "image/png",
+			// A 1x1 PNG.
+			body: Buffer.from(
+				"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+				"base64",
+			),
+		}),
+	);
+	await openList(page);
+	const rows = page.getByRole("list", { name: "Posts" }).getByRole("listitem");
+	// Decorative: the title names the post.
+	await expect(rows.nth(1).locator("img")).toHaveAttribute("alt", "");
+	await expect(rows.nth(1).locator("img")).toHaveAttribute(
+		"src",
+		"https://storage.test/posts/01COVER.jpg?sig",
+	);
+	await expect(rows.nth(0).locator("img")).toHaveAttribute(
+		"src",
+		/two-crown-green-bowls/,
+	);
+});
+
+test("a cover that can't be shown leaves an empty frame, not a broken image", async ({
+	page,
+}) => {
+	await page.route("https://storage.test/**", (route) =>
+		route.fulfill({ status: 403 }),
+	);
+	// One with the key but no link (the API couldn't sign one), one whose link won't load.
+	await openList(page, [
+		{ ...posts[1], id: "a", title: "No link", coverUrl: undefined },
+		{ ...posts[1], id: "b", title: "Link fails" },
+	]);
+	const rows = page.getByRole("list", { name: "Posts" }).getByRole("listitem");
+	for (const row of [rows.nth(0), rows.nth(1)]) {
+		// A browser draws an image with no source as broken, so it's a plain box.
+		await expect(row.locator("img")).toHaveCount(0);
+		await expect(row.locator("[data-thumbnail]")).toBeVisible();
+	}
 });

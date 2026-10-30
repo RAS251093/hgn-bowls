@@ -61,3 +61,11 @@ for (const path of pages) {
 		});
 	});
 }
+
+// The design system page is a tool for building the site (npm run dev),
+// not something visitors should find.
+test("the design system page isn't part of the built site", async ({
+	request,
+}) => {
+	expect((await request.get("/design-system")).status()).toBe(404);
+});

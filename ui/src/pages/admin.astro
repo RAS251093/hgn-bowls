@@ -1,4 +1,5 @@
 ---
+import { getImage } from "astro:assets";
 // The admin area: one page with two views, the list of news posts and the
 // editor (?post=<id>). Moving between them never reloads the page, because
 // tokens live in memory and a reload means a trip through Auth0.
@@ -10,6 +11,7 @@ import {
 	Bold,
 	Heading2,
 	Heading3,
+	ImagePlus,
 	Italic,
 	Link,
 	List,
@@ -17,7 +19,9 @@ import {
 	LogOut,
 	Plus,
 	TextQuote,
+	Trash,
 } from "@lucide/astro";
+import defaultCover from "../assets/two-crown-green-bowls.jpg";
 import Button from "../components/ui/Button.astro";
 import Callout from "../components/ui/Callout.astro";
 import Field from "../components/ui/Field.astro";
@@ -27,6 +31,19 @@ import StatusBadge from "../components/ui/StatusBadge.astro";
 import AdminLayout from "../layouts/AdminLayout.astro";
 import { limits } from "../lib/admin/draft";
 import { editHref } from "../lib/admin/posts";
+
+// The club photo the site shows for a post without a cover, small enough
+// for the list's thumbnails (twice their size, for sharp screens).
+const defaultThumbnail = await getImage({
+	src: defaultCover,
+	width: 224,
+	height: 152,
+	fit: "cover",
+	format: "webp",
+});
+
+// What the API accepts for a cover (api/media/media.go).
+const imageTypes = "image/jpeg,image/png,image/webp";
 
 // Admins add events in Google Calendar itself, signed in as the club.
 const googleCalendar = "https://calendar.google.com/calendar/r";
@@ -95,7 +112,7 @@ const tool =
 				<strong class="font-semibold">Adding an event?</strong> Events come straight from the club's Google Calendar, so add them there as usual.
 				<a slot="action" class="inline-flex min-h-11 items-center text-label text-info-foreground underline" href={googleCalendar}>Open Google Calendar</a>
 			</Callout>
-			<ul data-list aria-label="Posts" class="m-0 flex list-none flex-col gap-3 p-0"></ul>
+			<ul data-list data-default-thumbnail={defaultThumbnail.src} aria-label="Posts" class="m-0 flex list-none flex-col gap-3 p-0"></ul>
 			<p data-empty hidden class="m-0 rounded-md bg-secondary px-6 py-5">No news posts yet. Write a post to tell members what's happening at the club.</p>
 		</div>
 	</section>
@@ -138,6 +155,31 @@ const tool =
 		<form data-editor-form hidden novalidate class="flex flex-col gap-6">
 			<Field id="post-title" name="title" label="Headline" help={`Up to ${limits.title} characters.`} autocomplete="off" liveErrors />
 			<Field id="post-description" name="description" label="Description" help={`A sentence or two, shown under the headline and on the news page. Up to ${limits.description} characters.`} multiline rows={3} liveErrors />
+
+			<fieldset data-cover aria-describedby="cover-help" class="m-0 flex min-w-0 flex-col gap-3 border-0 p-0">
+				<legend class="mb-2 p-0 text-label">Cover photo</legend>
+				<p id="cover-help" class="m-0 text-body-sm text-muted-foreground">Optional. Shown at the top of the post and on the news page; without one, the club's photo of the green is used. A JPEG, PNG or WebP photo up to 10 MB.</p>
+				<div data-cover-set hidden class="flex flex-col gap-4">
+					<img data-cover-image alt="" class="aspect-video w-full rounded-lg bg-secondary object-cover" />
+					<p data-cover-unavailable hidden class="m-0 rounded-lg bg-secondary px-6 py-5 text-body-sm text-muted-foreground">This post has a cover photo, but it can't be shown right now. It's still saved with the post.</p>
+					<Field id="cover-alt" label="Describe the photo" help={`For people who can't see it, for example: Two members bowling on a sunny afternoon. Up to ${limits.coverAlt} characters.`} autocomplete="off" liveErrors />
+					<div class="flex flex-wrap gap-3">
+						<Button as="label" variant="outline" size="sm">
+							<ImagePlus aria-hidden="true" />Change photo
+							<input type="file" data-cover-file accept={imageTypes} class="sr-only" />
+						</Button>
+						<Button variant="outline" size="sm" data-cover-remove><Trash aria-hidden="true" />Remove photo</Button>
+					</div>
+				</div>
+				<div data-cover-empty class="flex">
+					<Button as="label" variant="outline" size="sm">
+						<ImagePlus aria-hidden="true" />Add a cover photo
+						<input type="file" data-cover-file accept={imageTypes} class="sr-only" />
+					</Button>
+				</div>
+				<p data-cover-uploading role="status" hidden class="m-0 text-body-sm text-muted-foreground">Uploading the photo…</p>
+				<p data-cover-error role="alert" hidden class="m-0 text-body-sm font-medium text-destructive"></p>
+			</fieldset>
 
 			<div class="group flex flex-col gap-2">
 				<span id="post-body-label" class="text-label group-has-[[aria-invalid=true]]:text-destructive">Post</span>

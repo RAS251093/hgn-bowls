@@ -7,9 +7,12 @@ resource "google_storage_bucket" "images" {
   uniform_bucket_level_access = true
   public_access_prevention    = "enforced"
 
-  # The admin page uploads straight from the browser.
+  # The admin page uploads straight from the browser, from the site, any
+  # Pages preview or local dev. Cloud Storage can't match wildcard
+  # subdomains, so any origin may PUT: the signed URL is what grants an
+  # upload, locked to one object name, type and size for five minutes.
   cors {
-    origin          = var.allowed_origins
+    origin          = ["*"]
     method          = ["PUT"]
     response_header = ["Content-Type", "x-goog-content-length-range"]
     max_age_seconds = 600

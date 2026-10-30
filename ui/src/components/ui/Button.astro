@@ -1,6 +1,7 @@
 ---
 /**
  * Button: the one control for every action. Renders an <a> when `href` is set, otherwise a <button>.
+ * `as="label"` makes it the visible face of a hidden file input placed inside it.
  * One filled button per container: `primary` on light grounds, `accent` inside a club green band.
  * Everything else in the cluster is `outline`. Guide: design-system/components/Button.md
  */
@@ -11,12 +12,14 @@ type Props = HTMLAttributes<"button"> &
 		variant?: "primary" | "accent" | "outline" | "destructive";
 		size?: "default" | "sm";
 		href?: string;
+		as?: "label";
 	};
 
 const {
 	variant = "primary",
 	size = "default",
 	href,
+	as,
 	class: className,
 	type = "button",
 	...rest
@@ -41,11 +44,21 @@ const variants = {
 		"bg-transparent text-destructive border-destructive hover:bg-destructive-tint hover:text-destructive",
 };
 
-const classes = [base, sizes[size], variants[variant], className];
+const classes = [
+	base,
+	sizes[size],
+	variants[variant],
+	as === "label" && "focus-ring-within-input",
+	className,
+];
 ---
 
 {
-	href ? (
+	as === "label" ? (
+		<label class:list={classes} {...(rest as HTMLAttributes<"label">)}>
+			<slot />
+		</label>
+	) : href ? (
 		<a href={href} class:list={classes} {...rest}>
 			<slot />
 		</a>
