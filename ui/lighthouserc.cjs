@@ -3,11 +3,12 @@
 // default (phone) profile and judges the median run, so one slow run on a
 // busy CI machine doesn't fail the build.
 //
-// Run with `npm run lighthouse` after a build. @lhci/cli is fetched at a
-// pinned version rather than installed: its dependency tree carries known
-// vulnerabilities in code paths this use never reaches (zip extraction,
-// FTP, proxies), and keeping it out of package-lock.json keeps the
-// project's own audit clean.
+// Run with `npm run lighthouse` after a build. @lhci/cli lives in
+// tools/lighthouse with its own lockfile, so every package it pulls in is
+// pinned (fetching it with npx picked up whatever was newest that minute).
+// Keeping it out of the site's package-lock.json keeps the site's audit
+// clean: its tree carries known vulnerabilities in code paths this use
+// never reaches (zip extraction, FTP, a localhost-only server).
 module.exports = {
 	ci: {
 		collect: {
