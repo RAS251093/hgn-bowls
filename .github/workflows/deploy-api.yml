@@ -53,6 +53,14 @@ jobs:
             --quiet
           gcloud run jobs execute migrate --region "$REGION" --wait
 
+      # The weekly backup runs the same binary, so it follows each release.
+      - name: backup job image
+        run: |
+          gcloud run jobs update backup \
+            --image "$IMAGE:$GITHUB_SHA" \
+            --region "$REGION" \
+            --quiet
+
       - name: deploy
         run: |
           gcloud run deploy api \

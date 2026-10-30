@@ -10,6 +10,60 @@ import (
 	"database/sql"
 )
 
+const allPosts = `-- name: AllPosts :many
+SELECT id, slug, title, description, body_md, cover_image_key, cover_alt, status, published_at, created_at, updated_at, created_by, updated_by, deleted_at FROM posts ORDER BY created_at, id
+`
+
+// Every post, deleted ones included, for backups.
+func (q *Queries) AllPosts(ctx context.Context) ([]Post, error) {
+	rows, err := q.db.QueryContext(ctx, allPosts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Post
+	for rows.Next() {
+		var i Post
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Title,
+			&i.Description,
+			&i.BodyMd,
+			&i.CoverImageKey,
+			&i.CoverAlt,
+			&i.Status,
+			&i.PublishedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.CreatedBy,
+			&i.UpdatedBy,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const countPosts = `-- name: CountPosts :one
+SELECT COUNT(*) FROM posts
+`
+
+func (q *Queries) CountPosts(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countPosts)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createPost = `-- name: CreatePost :exec
 INSERT INTO posts (
     id, title, description, body_md, cover_image_key, cover_alt,
@@ -251,6 +305,56 @@ func (q *Queries) RestorePost(ctx context.Context, arg RestorePostParams) (int64
 		return 0, err
 	}
 	return result.RowsAffected()
+}
+
+const restorePostRow = `-- name: RestorePostRow :exec
+INSERT INTO posts (
+    id, slug, title, description, body_md, cover_image_key, cover_alt, status,
+    published_at, created_at, updated_at, created_by, updated_by, deleted_at
+) VALUES (
+    ?1, ?2, ?3, ?4, ?5,
+    ?6, ?7, ?8,
+    ?9, ?10, ?11,
+    ?12, ?13, ?14
+)
+`
+
+type RestorePostRowParams struct {
+	ID            string
+	Slug          sql.NullString
+	Title         string
+	Description   string
+	BodyMd        string
+	CoverImageKey sql.NullString
+	CoverAlt      sql.NullString
+	Status        string
+	PublishedAt   sql.NullString
+	CreatedAt     string
+	UpdatedAt     string
+	CreatedBy     string
+	UpdatedBy     string
+	DeletedAt     sql.NullString
+}
+
+// Puts back a post exactly as a backup holds it.
+func (q *Queries) RestorePostRow(ctx context.Context, arg RestorePostRowParams) error {
+	_, err := q.db.ExecContext(ctx, restorePostRow,
+		arg.ID,
+		arg.Slug,
+		arg.Title,
+		arg.Description,
+		arg.BodyMd,
+		arg.CoverImageKey,
+		arg.CoverAlt,
+		arg.Status,
+		arg.PublishedAt,
+		arg.CreatedAt,
+		arg.UpdatedAt,
+		arg.CreatedBy,
+		arg.UpdatedBy,
+		arg.DeletedAt,
+	)
+	return err
 }
 
 const slugTaken = `-- name: SlugTaken :one

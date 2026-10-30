@@ -3,6 +3,7 @@ package main
 import (
 	"cmp"
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -15,6 +16,7 @@ import (
 	"cloud.google.com/go/storage"
 
 	"github.com/ras251093/hgn-bowls/api/auth"
+	"github.com/ras251093/hgn-bowls/api/backup"
 	"github.com/ras251093/hgn-bowls/api/config"
 	"github.com/ras251093/hgn-bowls/api/db"
 	"github.com/ras251093/hgn-bowls/api/events"
@@ -31,9 +33,14 @@ func main() {
 
 	ctx := context.Background()
 	var err error
-	if len(os.Args) > 1 && os.Args[1] == "migrate" {
+	switch arg(1) {
+	case "migrate":
 		err = migrate(ctx, logger)
-	} else {
+	case "backup":
+		err = backupPosts(ctx, logger)
+	case "restore":
+		err = restorePosts(ctx, logger, arg(2))
+	default:
 		err = run(ctx, logger)
 	}
 	if err != nil {
@@ -42,15 +49,90 @@ func main() {
 	}
 }
 
+func arg(i int) string {
+	if len(os.Args) > i {
+		return os.Args[i]
+	}
+	return ""
+}
+
+// openDatabase connects with TURSO_URL and TURSO_TOKEN, for the commands
+// that only need the database.
+func openDatabase() (*sql.DB, error) {
+	url := os.Getenv("TURSO_URL")
+	if url == "" {
+		return nil, errors.New("missing required env vars: TURSO_URL")
+	}
+	return db.Open(url, os.Getenv("TURSO_TOKEN"))
+}
+
+// backupPosts exports every post to the private backups bucket. A Cloud
+// Run job runs it weekly as "api backup"; the bucket deletes exports after
+// 90 days.
+func backupPosts(ctx context.Context, logger *slog.Logger) error {
+	bucket := os.Getenv("BACKUP_BUCKET")
+	if bucket == "" {
+		return errors.New("missing required env vars: BACKUP_BUCKET")
+	}
+	conn, err := openDatabase()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	gcs, err := storage.NewClient(ctx)
+	if err != nil {
+		return fmt.Errorf("storage client: %w", err)
+	}
+	defer gcs.Close()
+
+	now := time.Now()
+	name := backup.ObjectName(now)
+	w := gcs.Bucket(bucket).Object(name).If(storage.Conditions{DoesNotExist: true}).NewWriter(ctx)
+	w.ContentType = "application/json"
+	if err := backup.Export(ctx, db.New(conn), w, now); err != nil {
+		_ = w.Close()
+		return err
+	}
+	if err := w.Close(); err != nil {
+		return fmt.Errorf("upload backup: %w", err)
+	}
+	logger.Info("backup written", "object", "gs://"+bucket+"/"+name)
+	return nil
+}
+
+// restorePosts loads a backup file into an empty database, as
+// "api restore FILE". Point TURSO_URL at file:… to try one locally; a file
+// database is migrated first.
+func restorePosts(ctx context.Context, logger *slog.Logger, path string) error {
+	if path == "" {
+		return errors.New("usage: api restore BACKUP.json")
+	}
+	f, err := os.Open(path) //nolint:gosec // G304: the operator names the file
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	conn, err := openDatabase()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	if err := db.Migrate(ctx, conn); err != nil {
+		return err
+	}
+	n, err := backup.Restore(ctx, conn, f)
+	if err != nil {
+		return err
+	}
+	logger.Info("backup restored", "posts", n)
+	return nil
+}
+
 // migrate brings the database schema up to date. The deploy job runs it as
 // "api migrate" before a new revision takes traffic, so it only needs the
 // database settings.
 func migrate(ctx context.Context, logger *slog.Logger) error {
-	url := os.Getenv("TURSO_URL")
-	if url == "" {
-		return errors.New("missing required env vars: TURSO_URL")
-	}
-	conn, err := db.Open(url, os.Getenv("TURSO_TOKEN"))
+	conn, err := openDatabase()
 	if err != nil {
 		return err
 	}

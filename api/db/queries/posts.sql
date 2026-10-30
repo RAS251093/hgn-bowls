@@ -68,3 +68,22 @@ INSERT INTO posts (
     'published', sqlc.arg(published_at), sqlc.arg(now), sqlc.arg(now), sqlc.arg(user_id), sqlc.arg(user_id)
 )
 ON CONFLICT (slug) DO NOTHING;
+
+-- name: AllPosts :many
+-- Every post, deleted ones included, for backups.
+SELECT * FROM posts ORDER BY created_at, id;
+
+-- name: CountPosts :one
+SELECT COUNT(*) FROM posts;
+
+-- name: RestorePostRow :exec
+-- Puts back a post exactly as a backup holds it.
+INSERT INTO posts (
+    id, slug, title, description, body_md, cover_image_key, cover_alt, status,
+    published_at, created_at, updated_at, created_by, updated_by, deleted_at
+) VALUES (
+    sqlc.arg(id), sqlc.narg(slug), sqlc.arg(title), sqlc.arg(description), sqlc.arg(body_md),
+    sqlc.narg(cover_image_key), sqlc.narg(cover_alt), sqlc.arg(status),
+    sqlc.narg(published_at), sqlc.arg(created_at), sqlc.arg(updated_at),
+    sqlc.arg(created_by), sqlc.arg(updated_by), sqlc.narg(deleted_at)
+);
