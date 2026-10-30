@@ -14,6 +14,7 @@ const stored = {
 	bodyMd: "We opened the green.\n\n## How it went\n\nIt was **sunny**.",
 	coverImageKey: "posts/01COVER.jpg",
 	coverAlt: "Two bowlers on the green",
+	coverUrl: "https://storage.test/posts/01COVER.jpg?sig",
 	status: "published",
 	publishedAt: "2025-04-05T09:00:00.000000Z",
 	createdAt: "2025-04-05T09:00:00.000000Z",
@@ -33,12 +34,46 @@ const cors = {
 	"Access-Control-Expose-Headers": "ETag",
 };
 
+// A 1x1 PNG, for covers and thumbnails.
+const png = Buffer.from(
+	"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+	"base64",
+);
+
 /** Stubs the posts API: the list, one post, and saves (answered with saveStatus). */
 async function stubApi(
 	page: Page,
-	{ saveStatus = 200 }: { saveStatus?: number } = {},
+	{
+		saveStatus = 200,
+		storageStatus = 200,
+	}: { saveStatus?: number; storageStatus?: number } = {},
 ) {
 	const saves: Saved[] = [];
+	const uploads: { contentType: string; size: number }[] = [];
+	await page.route("https://api.test/api/admin/uploads", (route) => {
+		uploads.push(route.request().postDataJSON());
+		return route.fulfill({
+			headers: cors,
+			json: {
+				key: "posts/2026/10/01UP.jpg",
+				uploadURL: "https://storage.test/upload?sig",
+				headers: {
+					"Content-Type": "image/png",
+					"x-goog-content-length-range": "0,100",
+				},
+			},
+		});
+	});
+	await page.route("https://storage.test/**", (route) => {
+		if (route.request().method() === "PUT") {
+			uploads.push({
+				contentType: "PUT",
+				size: route.request().postDataBuffer()?.length ?? 0,
+			});
+			return route.fulfill({ status: storageStatus, headers: cors });
+		}
+		return route.fulfill({ contentType: "image/png", body: png });
+	});
 	let version = 1;
 	// headers() leaves some out; allHeaders() has If-Match.
 	const record = async (req: Request) =>
@@ -85,7 +120,7 @@ async function stubApi(
 			json: { ...stored, id },
 		});
 	});
-	return saves;
+	return Object.assign(saves, { uploads });
 }
 
 const editor = (page: Page) => page.getByRole("textbox", { name: "Post" });
@@ -354,4 +389,108 @@ test("a new post needs no loading, so it shows no placeholders", async ({
 	await page.goto("/admin?post=new");
 	await expect(page.getByLabel("Headline")).toBeVisible();
 	await expect(page.locator("[data-editor-loading]")).toBeHidden();
+});
+
+test("a post's cover is shown with its description", async ({ page }) => {
+	await stubAuth0(page);
+	await stubApi(page);
+	await openPost(page);
+	const cover = page.getByRole("group", { name: "Cover photo" });
+	await expect(cover.locator("img")).toHaveAttribute(
+		"src",
+		"https://storage.test/posts/01COVER.jpg?sig",
+	);
+	await expect(cover.getByLabel("Describe the photo")).toHaveValue(
+		"Two bowlers on the green",
+	);
+	await expect(
+		cover.getByRole("button", { name: "Remove photo" }),
+	).toBeVisible();
+});
+
+test("adding a cover uploads it, then asks for a description before saving", async ({
+	page,
+}) => {
+	await stubAuth0(page);
+	const saves = await stubApi(page);
+	await page.goto("/admin?post=new");
+	await page.getByLabel("Headline").fill("Winter league");
+	await expect.poll(() => saves.length).toBe(1);
+
+	const cover = page.getByRole("group", { name: "Cover photo" });
+	await cover.getByLabel("Add a cover photo").setInputFiles({
+		name: "green.png",
+		mimeType: "image/png",
+		buffer: png,
+	});
+	await expect(cover.locator("img")).toHaveAttribute("src", /^blob:/);
+	expect(saves.uploads[0]).toEqual({
+		contentType: "image/png",
+		size: png.length,
+	});
+	await expect.poll(() => saves.uploads.at(-1)?.contentType).toBe("PUT");
+
+	// Not saved until the photo is described.
+	await expect(status(page)).toContainText("Describe the cover photo to save");
+	expect(saves).toHaveLength(1);
+
+	await cover.getByLabel("Describe the photo").fill("The green in winter sun");
+	await expect.poll(() => saves.length).toBe(2);
+	expect(saves[1].body).toMatchObject({
+		coverImageKey: "posts/2026/10/01UP.jpg",
+		coverAlt: "The green in winter sun",
+	});
+});
+
+test("Remove photo takes the cover off the post", async ({ page }) => {
+	await stubAuth0(page);
+	const saves = await stubApi(page);
+	await openPost(page);
+	const cover = page.getByRole("group", { name: "Cover photo" });
+	await cover.getByRole("button", { name: "Remove photo" }).click();
+
+	await expect(cover.locator("img")).toBeHidden();
+	await expect(cover.getByLabel("Add a cover photo")).toBeAttached();
+	await expect.poll(() => saves.length).toBe(1);
+	expect(saves[0].body).toMatchObject({ coverImageKey: null, coverAlt: null });
+});
+
+test("a file that isn't a photo is refused, saying what to choose", async ({
+	page,
+}) => {
+	await stubAuth0(page);
+	const saves = await stubApi(page);
+	await openPost(page);
+	const cover = page.getByRole("group", { name: "Cover photo" });
+	await cover.getByRole("button", { name: "Remove photo" }).click();
+	await cover.getByLabel("Add a cover photo").setInputFiles({
+		name: "minutes.pdf",
+		mimeType: "application/pdf",
+		buffer: Buffer.from("%PDF"),
+	});
+	await expect(
+		cover.getByText("Choose a JPEG, PNG or WebP photo"),
+	).toBeVisible();
+	expect(saves.uploads).toHaveLength(0);
+});
+
+test("a failed upload says so and leaves the post as it was", async ({
+	page,
+}) => {
+	await stubAuth0(page);
+	const saves = await stubApi(page, { storageStatus: 403 });
+	await openPost(page);
+	const cover = page.getByRole("group", { name: "Cover photo" });
+	await cover.getByLabel("Change photo").setInputFiles({
+		name: "green.png",
+		mimeType: "image/png",
+		buffer: png,
+	});
+	await expect(cover.getByText("The photo didn't upload")).toBeVisible();
+	await expect(cover.locator("img")).toHaveAttribute(
+		"src",
+		"https://storage.test/posts/01COVER.jpg?sig",
+	);
+	await page.waitForTimeout(2000);
+	expect(saves).toHaveLength(0);
 });

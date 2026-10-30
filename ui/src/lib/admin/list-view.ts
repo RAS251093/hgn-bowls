@@ -4,8 +4,10 @@ import type { Api } from "./api";
 import { el, Forbidden, template, type View } from "./dom";
 import { type AdminPost, editHref, metaLine } from "./posts";
 
-function row(post: AdminPost): DocumentFragment {
+function row(post: AdminPost, defaultThumbnail: string): DocumentFragment {
 	const li = template("[data-row]");
+	el<HTMLImageElement>("[data-thumbnail]", li).src =
+		post.coverUrl ?? defaultThumbnail;
 	const link = el<HTMLAnchorElement>("[data-title]", li);
 	link.textContent = post.title;
 	link.href = editHref(post.id);
@@ -38,7 +40,8 @@ export async function showList(api: Api): Promise<View> {
 	}
 	const { posts } = (await res.json()) as { posts: AdminPost[] };
 	const list = el<HTMLUListElement>("[data-list]", view);
-	list.replaceChildren(...posts.map(row));
+	const fallback = list.dataset.defaultThumbnail ?? "";
+	list.replaceChildren(...posts.map((p) => row(p, fallback)));
 	list.hidden = posts.length === 0;
 	el("[data-empty]", view).hidden = posts.length > 0;
 	for (const r of ready) r.hidden = false;

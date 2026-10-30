@@ -8,7 +8,8 @@
 <Button variant="destructive" size="sm">Delete post</Button>
 ```
 
-**Props:** `variant` (`primary`, `accent`, `outline`, `destructive`; default `primary`), `size` (`default` 48px, `sm` 44px), `href`, plus any `<a>` or `<button>` attribute. Children are the label and an optional 20px Lucide icon.
+**Props:** `variant` (`primary`, `accent`, `outline`, `destructive`; default `primary`), `size` (`default` 48px, `sm` 44px), `href`, `as`, plus any `<a>` or `<button>` attribute. Children are the label and an optional 20px Lucide icon.
+- `as="label"` renders a `<label>` for a file picker: put the `<input type="file" class="sr-only">` inside it, so clicking the button opens the picker, the input is named by the label, and keyboard focus on the input shows the ring on the button.
 - **One filled button per container.** On light grounds that's `primary` (club green); everything else in the cluster is `outline`. Inside a club green band (`on-primary`) the filled one is `accent` (turf), and `outline` turns light with a turf edge by itself.
 - `accent` only ever sits on club green; on a light ground turf has too little contrast to mean anything.
 - `destructive` is an outline in `destructive`, never a red fill. Delete acts at once and shows an UndoToast.

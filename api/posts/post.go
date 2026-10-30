@@ -60,6 +60,9 @@ type Post struct {
 	UpdatedAt     string  `json:"updatedAt"`
 	CreatedBy     string  `json:"createdBy"`
 	UpdatedBy     string  `json:"updatedBy"`
+	// CoverURL is a link to the cover valid for an hour, for the editor and
+	// the list to show it. Set by the handler; never stored.
+	CoverURL *string `json:"coverUrl,omitempty"`
 }
 
 // Draft is what an admin sends when creating or saving a post.

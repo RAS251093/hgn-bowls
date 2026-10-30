@@ -18,6 +18,8 @@ const posts = [
 		status: "published",
 		publishedAt: "2025-04-05T09:00:00.000000Z",
 		updatedAt: "2025-04-05T09:00:00.000000Z",
+		coverImageKey: "posts/01COVER.jpg",
+		coverUrl: "https://storage.test/posts/01COVER.jpg?sig",
 	},
 ];
 
@@ -193,4 +195,24 @@ test("while the posts load, placeholder rows hold their place", async ({
 		page.getByRole("list", { name: "Posts" }).getByRole("listitem"),
 	).toHaveCount(2);
 	await expect(loading).toBeHidden();
+});
+
+test("each row shows the post's cover, or the club photo the site uses without one", async ({
+	page,
+}) => {
+	await page.route("https://storage.test/**", (route) =>
+		route.fulfill({ contentType: "image/png", body: Buffer.alloc(0) }),
+	);
+	await openList(page);
+	const rows = page.getByRole("list", { name: "Posts" }).getByRole("listitem");
+	// Decorative: the title names the post.
+	await expect(rows.nth(1).locator("img")).toHaveAttribute("alt", "");
+	await expect(rows.nth(1).locator("img")).toHaveAttribute(
+		"src",
+		"https://storage.test/posts/01COVER.jpg?sig",
+	);
+	await expect(rows.nth(0).locator("img")).toHaveAttribute(
+		"src",
+		/two-crown-green-bowls/,
+	);
 });

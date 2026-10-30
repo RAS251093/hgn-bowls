@@ -9,9 +9,12 @@ import { el, Forbidden, type View } from "./dom";
 import { type Draft, type FieldErrors, validateDraft } from "./draft";
 import { linkAddress } from "./links";
 import { editorExtensions, fromMarkdown, toMarkdown } from "./markdown";
+import { UploadError, uploadImage } from "./upload";
 
 interface StoredPost extends Draft {
 	id: string;
+	/** A link to the cover valid for an hour. */
+	coverUrl?: string;
 }
 
 export interface EditorOptions {
@@ -107,17 +110,19 @@ export async function openEditor(
 	// The headline only counts as missing once the admin has been there, or
 	// for a post that already had one.
 	let titleTouched = Boolean(post);
+	const cover = coverPicker(view, api, post, () => changed());
 	const draft = (): Draft => ({
 		title: title.value,
 		description: description.value,
 		bodyMd: toMarkdown(editor.getJSON()),
-		coverImageKey: post?.coverImageKey ?? null,
-		coverAlt: post?.coverAlt ?? null,
+		coverImageKey: cover.key(),
+		coverAlt: cover.key() ? cover.alt() : null,
 	});
 
 	const showErrors = (errors: FieldErrors) => {
 		fieldError(title, titleTouched ? errors.title : undefined);
 		fieldError(description, errors.description);
+		cover.showError(errors.coverAlt);
 		bodyError.textContent = errors.bodyMd ?? "";
 		bodyError.hidden = !errors.bodyMd;
 		el("#post-body", view).toggleAttribute(
@@ -148,10 +153,7 @@ export async function openEditor(
 					break;
 				case "invalid":
 					showErrors(status.fields);
-					statusLine.textContent =
-						isNew && status.fields.title === "Add a headline"
-							? "Add a headline to save"
-							: "Not saved. Check the highlighted fields.";
+					statusLine.textContent = invalidMessage(status.fields);
 					break;
 				case "failed":
 					statusLine.textContent = "Not saved. We'll try again in a moment.";
@@ -164,6 +166,16 @@ export async function openEditor(
 			}
 		},
 	});
+
+	// What the status line says when a save is held back.
+	const invalidMessage = (fields: FieldErrors) => {
+		const only = Object.keys(fields).length === 1;
+		if (isNew && fields.title === "Add a headline")
+			return "Add a headline to save";
+		if (only && fields.coverAlt && !cover.altTouched())
+			return "Describe the cover photo to save";
+		return "Not saved. Check the highlighted fields.";
+	};
 
 	const changed = () => {
 		const d = draft();
@@ -193,7 +205,110 @@ export async function openEditor(
 			description.removeEventListener("input", changed);
 			removeEventListener("beforeunload", warn);
 			stopToolbar();
+			cover.stop();
 			editor.destroy();
+		},
+	};
+}
+
+// The cover photo: shows the current one, uploads a new one (straight to
+// Cloud Storage) or removes it, and holds its description. A new photo
+// needs a new description, so choosing one clears the old.
+function coverPicker(
+	view: HTMLElement,
+	api: Api,
+	post: StoredPost | null,
+	onChange: () => void,
+) {
+	const box = el("[data-cover]", view);
+	const set = el("[data-cover-set]", box);
+	const empty = el("[data-cover-empty]", box);
+	const image = el<HTMLImageElement>("[data-cover-image]", box);
+	const alt = el<HTMLInputElement>("#cover-alt", box);
+	const uploading = el("[data-cover-uploading]", box);
+	const problem = el("[data-cover-error]", box);
+	const files = [
+		...box.querySelectorAll<HTMLInputElement>("[data-cover-file]"),
+	];
+
+	let key = post?.coverImageKey ?? null;
+	let preview = ""; // an object URL for a photo chosen here
+	let touched = Boolean(post?.coverAlt);
+	alt.value = post?.coverAlt ?? "";
+
+	const render = () => {
+		set.hidden = !key;
+		empty.hidden = Boolean(key);
+		if (key) image.src = preview || post?.coverUrl || "";
+		else image.removeAttribute("src");
+	};
+	const say = (message: string) => {
+		problem.textContent = message;
+		problem.hidden = !message;
+	};
+
+	const onFile = async (e: Event) => {
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		input.value = "";
+		if (!file) return;
+		say("");
+		uploading.hidden = false;
+		for (const f of files) f.disabled = true;
+		try {
+			key = await uploadImage(api, file);
+			if (preview) URL.revokeObjectURL(preview);
+			preview = URL.createObjectURL(file);
+			alt.value = "";
+			touched = false;
+			render();
+			onChange();
+			alt.focus();
+		} catch (err) {
+			say(
+				err instanceof UploadError
+					? err.message
+					: "The photo didn't upload. Try again.",
+			);
+		} finally {
+			uploading.hidden = true;
+			for (const f of files) f.disabled = false;
+		}
+	};
+	const onRemove = () => {
+		key = null;
+		alt.value = "";
+		touched = false;
+		say("");
+		render();
+		onChange();
+		files.find((f) => !f.closest("[hidden]"))?.focus();
+	};
+	const onAlt = () => {
+		touched = true;
+		onChange();
+	};
+
+	for (const f of files) f.addEventListener("change", onFile);
+	const remove = el("[data-cover-remove]", box);
+	remove.addEventListener("click", onRemove);
+	alt.addEventListener("input", onAlt);
+	fieldError(alt, undefined);
+	say("");
+	uploading.hidden = true;
+	render();
+
+	return {
+		key: () => key,
+		alt: () => alt.value,
+		altTouched: () => touched,
+		showError: (message: string | undefined) =>
+			fieldError(alt, touched ? message : undefined),
+		stop: () => {
+			for (const f of files) f.removeEventListener("change", onFile);
+			remove.removeEventListener("click", onRemove);
+			alt.removeEventListener("input", onAlt);
+			if (preview) URL.revokeObjectURL(preview);
 		},
 	};
 }

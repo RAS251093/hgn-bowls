@@ -42,6 +42,9 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, err)
 		return
 	}
+	for i := range ps {
+		h.linkCover(r, &ps[i])
+	}
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, map[string][]Post{"posts": ps})
 }
@@ -59,6 +62,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Location", "/api/admin/posts/"+p.ID)
+	h.linkCover(r, &p)
 	writePost(w, http.StatusCreated, p)
 }
 
@@ -69,6 +73,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, err)
 		return
 	}
+	h.linkCover(r, &p)
 	writePost(w, http.StatusOK, p)
 }
 
@@ -89,6 +94,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, err)
 		return
 	}
+	h.linkCover(r, &p)
 	writePost(w, http.StatusOK, p)
 }
 
@@ -147,9 +153,25 @@ func (h *Handler) respondChanged(w http.ResponseWriter, r *http.Request, p *Post
 		}
 	}
 	if p != nil {
+		h.linkCover(r, p)
 		w.Header().Set("ETag", etag(*p))
 	}
 	writeJSON(w, http.StatusOK, res)
+}
+
+// linkCover adds a short-lived link to p's cover. If signing fails the
+// post goes out without one: an admin can still edit it, just without
+// seeing the picture.
+func (h *Handler) linkCover(r *http.Request, p *Post) {
+	if p.CoverImageKey == nil {
+		return
+	}
+	url, err := h.images.SignedReadURL(r.Context(), *p.CoverImageKey)
+	if err != nil {
+		h.logger.Error("signing cover link", "err", err, "post", p.ID)
+		return
+	}
+	p.CoverURL = &url
 }
 
 // PublicPost is a published post as the site build reads it.
