@@ -56,7 +56,9 @@ jobs:
         with:
           node-version-file: ui/.nvmrc
           cache: npm
-          cache-dependency-path: ui/package-lock.json
+          cache-dependency-path: |
+            ui/package-lock.json
+            ui/tools/lighthouse/package-lock.json
 
       - name: install
         run: npm ci

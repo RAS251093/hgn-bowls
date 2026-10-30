@@ -1,0 +1,8 @@
+{
+	"name": "lighthouse-tools",
+	"private": true,
+	"description": "Lighthouse CI, kept apart from the site so its dependencies are pinned by their own lockfile without touching the site's audit.",
+	"dependencies": {
+		"@lhci/cli": "0.15.1"
+	}
+}
