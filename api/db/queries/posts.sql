@@ -55,3 +55,16 @@ WHERE id = sqlc.arg(id) AND deleted_at IS NOT NULL;
 -- name: SlugTaken :one
 -- Deleted posts keep their slug, so they count.
 SELECT EXISTS (SELECT 1 FROM posts WHERE slug = sqlc.arg(slug)) AS taken;
+
+-- name: ImportPost :execrows
+-- Adds an already-published post from the old site, keeping its slug and
+-- date. A slug that is already taken is left alone, so reruns are safe.
+INSERT INTO posts (
+    id, slug, title, description, body_md, cover_image_key, cover_alt,
+    status, published_at, created_at, updated_at, created_by, updated_by
+) VALUES (
+    sqlc.arg(id), sqlc.arg(slug), sqlc.arg(title), sqlc.arg(description), sqlc.arg(body_md),
+    sqlc.narg(cover_image_key), sqlc.narg(cover_alt),
+    'published', sqlc.arg(published_at), sqlc.arg(now), sqlc.arg(now), sqlc.arg(user_id), sqlc.arg(user_id)
+)
+ON CONFLICT (slug) DO NOTHING;

@@ -72,6 +72,52 @@ func (q *Queries) GetPost(ctx context.Context, id string) (Post, error) {
 	return i, err
 }
 
+const importPost = `-- name: ImportPost :execrows
+INSERT INTO posts (
+    id, slug, title, description, body_md, cover_image_key, cover_alt,
+    status, published_at, created_at, updated_at, created_by, updated_by
+) VALUES (
+    ?1, ?2, ?3, ?4, ?5,
+    ?6, ?7,
+    'published', ?8, ?9, ?9, ?10, ?10
+)
+ON CONFLICT (slug) DO NOTHING
+`
+
+type ImportPostParams struct {
+	ID            string
+	Slug          sql.NullString
+	Title         string
+	Description   string
+	BodyMd        string
+	CoverImageKey sql.NullString
+	CoverAlt      sql.NullString
+	PublishedAt   sql.NullString
+	Now           string
+	UserID        string
+}
+
+// Adds an already-published post from the old site, keeping its slug and
+// date. A slug that is already taken is left alone, so reruns are safe.
+func (q *Queries) ImportPost(ctx context.Context, arg ImportPostParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, importPost,
+		arg.ID,
+		arg.Slug,
+		arg.Title,
+		arg.Description,
+		arg.BodyMd,
+		arg.CoverImageKey,
+		arg.CoverAlt,
+		arg.PublishedAt,
+		arg.Now,
+		arg.UserID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const listPosts = `-- name: ListPosts :many
 SELECT id, slug, title, description, body_md, cover_image_key, cover_alt, status, published_at, created_at, updated_at, created_by, updated_by, deleted_at FROM posts WHERE deleted_at IS NULL ORDER BY updated_at DESC
 `

@@ -1,0 +1,29 @@
+{
+  "data": {
+    "posts": [
+      {
+        "title": "Opening day",
+        "description": "The green opens for the season.",
+        "slug": "opening-day",
+        "pubDate": "2025-04-05",
+        "body": {
+          "markdown": "We opened the green.\n\n<iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/LegryDpTHXo\" title=\"YouTube video player\" frameborder=\"0\" allowfullscreen></iframe>\n\n![The team](IMAGES/team.jpg)"
+        },
+        "altText": ["Bowlers on the green in the sunshine"],
+        "assets": [
+          { "id": "a1", "fileName": "green.jpg", "url": "IMAGES/green.jpg" },
+          { "id": "a2", "fileName": "extra.png", "url": "IMAGES/extra.png" }
+        ]
+      },
+      {
+        "title": "Winter work",
+        "description": "",
+        "slug": "winter-work",
+        "pubDate": "2025-11-14T18:30:00.000Z",
+        "body": { "markdown": "The green is resting." },
+        "altText": [],
+        "assets": []
+      }
+    ]
+  }
+}
