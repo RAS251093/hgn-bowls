@@ -6,12 +6,24 @@ import { type AdminPost, editHref, metaLine } from "./posts";
 
 function row(post: AdminPost, defaultThumbnail: string): DocumentFragment {
 	const li = template("[data-row]");
-	// A cover with no link (the API couldn't sign one) leaves the frame
-	// empty: the club photo would wrongly say the post has no cover.
+	// A cover with no link (the API couldn't sign one), or one that won't
+	// load, leaves a plain frame: the club photo would wrongly say the post
+	// has no cover, and an image with no source shows as broken.
 	const thumbnail = el<HTMLImageElement>("[data-thumbnail]", li);
+	const frame = () => {
+		const box = document.createElement("span");
+		box.className = thumbnail.className;
+		box.dataset.thumbnail = "";
+		box.ariaHidden = "true";
+		thumbnail.replaceWith(box);
+	};
 	const src = post.coverUrl ?? (post.coverImageKey ? "" : defaultThumbnail);
-	if (src) thumbnail.src = src;
-	thumbnail.addEventListener("error", () => thumbnail.removeAttribute("src"));
+	if (src) {
+		thumbnail.src = src;
+		thumbnail.addEventListener("error", frame, { once: true });
+	} else {
+		frame();
+	}
 	const link = el<HTMLAnchorElement>("[data-title]", li);
 	link.textContent = post.title;
 	link.href = editHref(post.id);

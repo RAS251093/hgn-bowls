@@ -224,14 +224,21 @@ test("each row shows the post's cover, or the club photo the site uses without o
 	);
 });
 
-test("a cover that can't be shown leaves an empty frame, not the club photo", async ({
+test("a cover that can't be shown leaves an empty frame, not a broken image", async ({
 	page,
 }) => {
-	// The key without a link, as when the API couldn't sign one.
-	await openList(page, [{ ...posts[1], coverUrl: undefined }]);
-	const thumb = page
-		.getByRole("list", { name: "Posts" })
-		.getByRole("listitem")
-		.locator("img");
-	await expect(thumb).not.toHaveAttribute("src", /.+/);
+	await page.route("https://storage.test/**", (route) =>
+		route.fulfill({ status: 403 }),
+	);
+	// One with the key but no link (the API couldn't sign one), one whose link won't load.
+	await openList(page, [
+		{ ...posts[1], id: "a", title: "No link", coverUrl: undefined },
+		{ ...posts[1], id: "b", title: "Link fails" },
+	]);
+	const rows = page.getByRole("list", { name: "Posts" }).getByRole("listitem");
+	for (const row of [rows.nth(0), rows.nth(1)]) {
+		// A browser draws an image with no source as broken, so it's a plain box.
+		await expect(row.locator("img")).toHaveCount(0);
+		await expect(row.locator("[data-thumbnail]")).toBeVisible();
+	}
 });
