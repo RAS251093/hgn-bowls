@@ -179,6 +179,30 @@ func TestListPublishedNewestFirst(t *testing.T) {
 	}
 }
 
+func TestImportPostKeepsSlugAndSkipsTakenOnes(t *testing.T) {
+	q := New(openTest(t))
+	ctx := context.Background()
+	imp := ImportPostParams{
+		ID: "a", Slug: sql.NullString{String: "opening-day", Valid: true}, Title: "Opening day",
+		PublishedAt: sql.NullString{String: "2025-04-05T09:00:00Z", Valid: true},
+		Now:         "2026-10-30T09:00:00Z", UserID: "import:hygraph",
+	}
+	if n, err := q.ImportPost(ctx, imp); err != nil || n != 1 {
+		t.Fatalf("first import: rows %d, err %v", n, err)
+	}
+	imp.ID = "b"
+	if n, err := q.ImportPost(ctx, imp); err != nil || n != 0 {
+		t.Fatalf("second import of the same slug: rows %d, err %v; want 0 rows", n, err)
+	}
+	got, err := q.ListPublishedPosts(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0].Slug.String != "opening-day" || got[0].PublishedAt.String != "2025-04-05T09:00:00Z" {
+		t.Errorf("published = %+v, want the one imported post with its slug and date", got)
+	}
+}
+
 // A rejected token must surface Turso's answer, not goose's "connection is
 // already closed" after its retries.
 func TestMigrateReportsUnreachableDatabase(t *testing.T) {
