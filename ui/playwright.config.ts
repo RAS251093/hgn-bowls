@@ -1,7 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// Browser tests run against the built site. The API is never called for
-// real: each test stubs https://api.test, which the build is pointed at.
+// Browser tests run against the built site. The API and Auth0 are never
+// called for real: tests stub https://api.test and https://auth.test, which
+// the build is pointed at.
 export default defineConfig({
 	testDir: "e2e",
 	fullyParallel: true,
@@ -17,7 +18,11 @@ export default defineConfig({
 	webServer: {
 		command: "npm run build && npm run preview -- --port 4322",
 		url: "http://localhost:4322",
-		env: { PUBLIC_API_URL: "https://api.test" },
+		env: {
+			PUBLIC_API_URL: "https://api.test",
+			PUBLIC_AUTH0_DOMAIN: "auth.test",
+			PUBLIC_AUTH0_CLIENT_ID: "test-client",
+		},
 		reuseExistingServer: !process.env.CI,
 		timeout: 120_000,
 	},

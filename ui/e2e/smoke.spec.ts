@@ -5,9 +5,7 @@ const pages = ["/", "/whats-on", "/news", "/news/sample-opening-day"];
 
 // Linked from the header or footer but not built yet. Once one exists its
 // check fails, as a reminder to take it off this list.
-const notBuiltYet: Record<string, string> = {
-	"/admin": "HGB-19",
-};
+const notBuiltYet: Record<string, string> = {};
 
 test.beforeEach(({ page }) =>
 	page.route("https://api.test/api/events*", (route) =>
