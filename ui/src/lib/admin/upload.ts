@@ -2,6 +2,7 @@
 // locked to one new object name, type and size, then the browser sends the
 // photo straight to Cloud Storage. The admin's token only goes to the API.
 import type { Api } from "./api.ts";
+import { shrinkPhoto } from "./shrink.ts";
 
 /** Something the admin can act on, worded for them. */
 export class UploadError extends Error {
@@ -24,14 +25,20 @@ interface Signed {
 	headers: Record<string, string>;
 }
 
-/** Uploads file and returns its object name for the post's coverImageKey. */
+/**
+ * Uploads chosen (shrunk first, see shrink.ts) and returns its object name
+ * for the post's coverImageKey.
+ */
 export async function uploadImage(
 	api: Api,
-	file: File,
+	chosen: File,
 	put: typeof fetch = fetch,
+	shrink: (photo: File) => Promise<File> = shrinkPhoto,
 ): Promise<string> {
-	if (!types.includes(file.type))
+	if (!types.includes(chosen.type))
 		throw new UploadError("Choose a JPEG, PNG or WebP photo");
+	// The limit is on what's sent, so a big phone photo shrinks to fit.
+	const file = await shrink(chosen);
 	if (file.size > maxBytes)
 		throw new UploadError("Choose a photo of 10 MB or smaller");
 

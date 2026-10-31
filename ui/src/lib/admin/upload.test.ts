@@ -126,4 +126,34 @@ describe("uploadImage", () => {
 			);
 		}
 	});
+
+	test("uploads the shrunk photo, with its type and size", async () => {
+		const { callApi, put, seen } = fakes({
+			api: { status: 200, json: signed },
+		});
+		const original = file("image/jpeg", 5000);
+		const smaller = new File([new Uint8Array(800)], "photo.webp", {
+			type: "image/webp",
+		});
+		await uploadImage(callApi, original, put, async () => smaller);
+		assert.deepEqual(JSON.parse(String(seen[0].body)), {
+			contentType: "image/webp",
+			size: 800,
+		});
+		assert.equal(seen[1].body, smaller);
+	});
+
+	test("checks the type and size of what it would upload, before shrinking", async () => {
+		const { callApi, put, seen } = fakes();
+		let shrunk = false;
+		await assert.rejects(
+			uploadImage(callApi, file("image/heic", 10), put, async (f) => {
+				shrunk = true;
+				return f;
+			}),
+			{ message: "Choose a JPEG, PNG or WebP photo" },
+		);
+		assert.equal(shrunk, false);
+		assert.equal(seen.length, 0);
+	});
 });
