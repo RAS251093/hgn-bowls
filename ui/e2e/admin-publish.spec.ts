@@ -221,10 +221,12 @@ test("unsaved edits are saved before publishing", async ({ page }) => {
 	await page.getByLabel("Headline").fill("Winter league 2026");
 	await page.getByRole("button", { name: "Publish post" }).click();
 	await expect(panel(page)).toContainText("Updating the website");
-	const order = calls.map((c) => `${c.method} ${c.path}`);
-	expect(order.indexOf("PUT /posts/01DRAFT")).toBeGreaterThanOrEqual(0);
-	expect(order.indexOf("PUT /posts/01DRAFT")).toBeLessThan(
-		order.indexOf("POST /posts/01DRAFT/publish"),
+	// The panel says so just before the publish request goes, so wait for it.
+	const order = () => calls.map((c) => `${c.method} ${c.path}`);
+	await expect.poll(order).toContain("POST /posts/01DRAFT/publish");
+	expect(order().indexOf("PUT /posts/01DRAFT")).toBeGreaterThanOrEqual(0);
+	expect(order().indexOf("PUT /posts/01DRAFT")).toBeLessThan(
+		order().indexOf("POST /posts/01DRAFT/publish"),
 	);
 });
 
