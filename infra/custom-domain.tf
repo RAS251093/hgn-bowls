@@ -24,3 +24,11 @@ output "custom_domain_cname" {
     target = try(auth0_custom_domain.auth.verification[0].methods[0].record, null)
   }
 }
+
+# Auth0 uses its default domain for tenant-level things such as the links
+# in emails, so make it the custom one.
+resource "auth0_custom_domain_default" "auth" {
+  domain = auth0_custom_domain.auth.domain
+
+  depends_on = [auth0_custom_domain_verification.auth]
+}
