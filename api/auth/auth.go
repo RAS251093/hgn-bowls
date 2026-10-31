@@ -25,8 +25,8 @@ const (
 	// refresh every few minutes picks it up in time.
 	keysMinRefresh = 5 * time.Minute
 	keysMaxRefresh = time.Hour
-	// keysWait bounds how long a request waits for the first key fetch
-	// after a cold start.
+	// keysWait bounds how long a request waits to fetch the keys itself,
+	// when the cache doesn't have them.
 	keysWait  = 5 * time.Second
 	clockSkew = 30 * time.Second
 )
@@ -77,20 +77,29 @@ func NewVerifier(ctx context.Context, issuerURL, audience string, client *http.C
 // errKeysUnavailable means Auth0's signing keys couldn't be fetched.
 var errKeysUnavailable = errors.New("signing keys unavailable")
 
-// verify checks a raw token's signature, issuer, audience and dates.
-func (v *Verifier) verify(ctx context.Context, raw string) (jwt.Token, error) {
-	res, err := v.keys.LookupResource(ctx, v.jwksURL)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", errKeysUnavailable, err)
+// keySet returns Auth0's signing keys: the cached set, or else a fetch made
+// now. If the cache's first fetch failed (a new Cloud Run instance's network
+// isn't always ready), it waits its minimum interval before trying again,
+// and a request can't wait that long. A request also has CPU, which the
+// background fetch may not between requests.
+func (v *Verifier) keySet(ctx context.Context) (jwk.Set, error) {
+	if set, err := v.keys.Lookup(ctx, v.jwksURL); err == nil {
+		return set, nil
 	}
 	wait, cancel := context.WithTimeout(ctx, v.keysWait)
 	defer cancel()
-	if err := res.Ready(wait); err != nil {
+	set, err := v.keys.Refresh(wait, v.jwksURL)
+	if err != nil {
 		return nil, fmt.Errorf("%w: %w", errKeysUnavailable, err)
 	}
-	set := res.Resource()
-	if set == nil {
-		return nil, errKeysUnavailable
+	return set, nil
+}
+
+// verify checks a raw token's signature, issuer, audience and dates.
+func (v *Verifier) verify(ctx context.Context, raw string) (jwt.Token, error) {
+	set, err := v.keySet(ctx)
+	if err != nil {
+		return nil, err
 	}
 	// WithKeySet only trusts the algorithm on the key (RS256 for Auth0),
 	// never the one the token claims, and requires a matching kid.

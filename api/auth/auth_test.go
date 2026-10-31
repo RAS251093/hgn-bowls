@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -21,6 +22,9 @@ const testAudience = "https://api.example.org"
 type issuer struct {
 	srv *httptest.Server
 	key *rsa.PrivateKey
+	// failing makes the JWKS endpoint answer 500 that many more times.
+	failing atomic.Int32
+	fetches atomic.Int32
 }
 
 func newIssuer(t *testing.T) *issuer {
@@ -46,6 +50,11 @@ func newIssuer(t *testing.T) *issuer {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /.well-known/jwks.json", func(w http.ResponseWriter, r *http.Request) {
+		iss.fetches.Add(1)
+		if iss.failing.Add(-1) >= 0 {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		_ = json.NewEncoder(w).Encode(set)
 	})
 	iss.srv = httptest.NewServer(mux)
@@ -257,6 +266,38 @@ func TestKeysUnavailableIs503(t *testing.T) {
 	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusServiceUnavailable {
 		t.Errorf("status = %d, want 503 when Auth0's keys can't be fetched", rec.Code)
+	}
+}
+
+// A new Cloud Run instance's first key fetch can fail (its network isn't
+// always ready). The cache then waits its minimum interval, 5 minutes,
+// before trying again, so requests mustn't wait for it: they fetch now.
+func TestKeysRecoverAfterAFailedFirstFetch(t *testing.T) {
+	iss := newIssuer(t)
+	iss.failing.Store(1)
+	v, err := NewVerifier(t.Context(), iss.url(), testAudience, iss.srv.Client(), slog.New(slog.DiscardHandler))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Let the background fetch happen, and fail.
+	deadline := time.Now().Add(5 * time.Second)
+	for iss.fetches.Load() == 0 && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	if iss.fetches.Load() == 0 {
+		t.Fatal("the key cache never fetched")
+	}
+
+	ran := false
+	h := v.RequirePermission("manage:posts")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ran = true
+	}))
+	req := httptest.NewRequestWithContext(t.Context(), "GET", "/api/admin/posts", nil)
+	req.Header.Set("Authorization", "Bearer "+iss.token(t, iss.key, iss.url(), testAudience, time.Now().Add(time.Hour), []string{"manage:posts"}))
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK || !ran {
+		t.Errorf("status = %d, want 200: the request should fetch the keys itself", rec.Code)
 	}
 }
 
