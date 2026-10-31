@@ -1,9 +1,11 @@
-// The admin page as an app: sign in, then show the list or the editor
-// for the address (?post=<id>), switching views in place. Links to other
+// The admin page as an app: sign in, then show the list, the editor
+// (?post=<id>), the guides (?help) or the admins (?admins) for the
+// address, switching views in place. Links to other
 // admin views are caught so the page never reloads, which would mean a
 // trip through Auth0 (tokens live only in memory); the back button works
 // through history.
 import { apiUrl } from "../../config";
+import { showAdmins } from "./admins-view";
 import { apiClient, SignInRequired } from "./api";
 import { el, Forbidden, type View } from "./dom";
 import { openEditor } from "./editor-view";
@@ -39,6 +41,8 @@ export async function start(): Promise<void> {
 		const who = el("[data-signed-in-as]");
 		who.textContent = session.name;
 		who.hidden = false;
+		// Only people who can manage admins see the way to them.
+		el("[data-admins-link]").hidden = !session.can("manage:admins");
 
 		const api = apiClient(apiUrl, session);
 		let current: View | null = null;
@@ -52,12 +56,15 @@ export async function start(): Promise<void> {
 			current =
 				route.view === "help"
 					? showHelp(route.guide)
-					: route.view === "list"
-						? await showList(api)
-						: await openEditor(api, route.id, {
-								onCreated: (id) => history.replaceState(null, "", editHref(id)),
-								onDeleted: (id) => void deleted(id),
-							});
+					: route.view === "admins"
+						? await showAdmins(api, session)
+						: route.view === "list"
+							? await showList(api)
+							: await openEditor(api, route.id, {
+									onCreated: (id) =>
+										history.replaceState(null, "", editHref(id)),
+									onDeleted: (id) => void deleted(id),
+								});
 			if (route.view === "list") document.title = "News posts · Club admin";
 			// A guide asked for by name gets focus and scrolls into view.
 			const guide = route.view === "help" && route.guide;

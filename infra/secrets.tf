@@ -1,6 +1,8 @@
 # Terraform only creates the secrets. Their values are added outside
 # Terraform so they never reach state, for example:
 #   op read op://hgn-bowls/api/turso_token | gcloud secrets versions add turso-token --data-file=-
+# Cloud Run won't start a revision whose secret has no version yet, so a new
+# secret needs a targeted apply first (see admins.tf for an example).
 locals {
   api_secrets = {
     TURSO_TOKEN          = "turso-token"
@@ -8,6 +10,9 @@ locals {
     PAGES_DEPLOY_HOOK    = "pages-deploy-hook"
     CLOUDFLARE_API_TOKEN = "cloudflare-api-token"
     BUILD_TOKEN          = "build-token"
+
+    # The admins app's secret (admins.tf), copied from the Auth0 dashboard.
+    AUTH0_MGMT_CLIENT_SECRET = "auth0-mgmt-client-secret"
   }
 }
 

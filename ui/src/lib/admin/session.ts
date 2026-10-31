@@ -9,9 +9,18 @@
 import { type Auth0Client, createAuth0Client } from "@auth0/auth0-spa-js";
 import { auth0 } from "../../config";
 import type { Tokens } from "./api";
+import { permissionsOf } from "./permissions";
 
 export interface Session extends Tokens {
 	name: string;
+	/** Their Auth0 user id and email address, to find them in a list of admins. */
+	sub?: string;
+	email?: string;
+	/**
+	 * Whether their access token grants a permission, such as
+	 * "manage:admins". For what the page shows only: the API decides.
+	 */
+	can(permission: string): boolean;
 	/** Revokes the refresh token, then ends the Auth0 session and comes back to the home page. */
 	signOut(): Promise<void>;
 }
@@ -71,8 +80,18 @@ async function session(
 	signIn: () => Promise<void>,
 ): Promise<Session> {
 	const user = await client.getUser();
+	// Read once at sign-in; a permission given later shows after the next one.
+	let permissions: string[] = [];
+	try {
+		permissions = permissionsOf((await client.getTokenSilently()) ?? "");
+	} catch {
+		// Nothing extra to show; the API still answers for itself.
+	}
 	return {
 		name: user?.name || user?.email || "you",
+		sub: user?.sub,
+		email: user?.email,
+		can: (permission) => permissions.includes(permission),
 		async token({ fresh = false } = {}) {
 			const token = await client.getTokenSilently({
 				cacheMode: fresh ? "off" : "on",

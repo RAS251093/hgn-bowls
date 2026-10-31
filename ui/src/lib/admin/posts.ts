@@ -39,29 +39,42 @@ export function metaLine(post: AdminPost, now: Date = new Date()): string {
 	if (post.status === "published" && post.publishedAt) {
 		return `Published ${day(new Date(post.publishedAt), now)}`;
 	}
-	const edited = new Date(post.updatedAt);
-	if (dayOf(edited) === dayOf(now)) {
-		const time = london({
+	return `Last edited ${dayOrTime(new Date(post.updatedAt), now)}`;
+}
+
+/**
+ * When something happened, in London: the time on the 24-hour clock if
+ * it was today ("14:32"), otherwise the day ("29 October").
+ */
+export function dayOrTime(d: Date, now: Date = new Date()): string {
+	if (dayOf(d) === dayOf(now)) {
+		return london({
 			hour: "2-digit",
 			minute: "2-digit",
 			hourCycle: "h23",
-		}).format(edited);
-		return `Last edited ${time}`;
+		}).format(d);
 	}
-	return `Last edited ${day(edited, now)}`;
+	return day(d, now);
 }
 
 // The admin area is one page, so moving between the list, the editor and
 // the help never reloads it (a reload means a trip through Auth0, as tokens
 // live in memory). ?post=<id> opens the editor for that post, ?post=new a
-// new one, and ?help the guides (?help=posts or ?help=events for one).
-export type Guide = "posts" | "events";
+// new one, ?help the guides (?help=posts, ?help=events or ?help=admins
+// for one) and ?admins the people who can sign in.
+export type Guide = "posts" | "events" | "admins";
 export type Route =
 	| { view: "list" }
 	| { view: "edit"; id: string | null }
-	| { view: "help"; guide: Guide | null };
+	| { view: "help"; guide: Guide | null }
+	| { view: "admins" };
 
-const guides: readonly string[] = ["posts", "events"];
+const guides: readonly string[] = ["posts", "events", "admins"];
+
+/** The admins: who can sign in, and inviting more. */
+export function adminsHref(): string {
+	return "/admin?admins";
+}
 
 /** The guides, or one of them. */
 export function helpHref(guide?: Guide): string {
@@ -83,6 +96,7 @@ export function routeOf(search: string): Route {
 			guide: guides.includes(guide) ? (guide as Guide) : null,
 		};
 	}
+	if (params.has("admins")) return { view: "admins" };
 	const post = params.get("post");
 	if (!post) return { view: "list" };
 	return { view: "edit", id: post === "new" ? null : post };

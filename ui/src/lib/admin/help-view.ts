@@ -5,6 +5,11 @@ import type { Guide } from "./posts";
 
 export function showHelp(guide: Guide | null): View {
 	el("[data-view=help]").hidden = false;
-	document.title = `${guide === "events" ? "Adding an event" : guide === "posts" ? "Writing a news post" : "Help"} · Club admin`;
+	const titles: Record<Guide, string> = {
+		posts: "Writing a news post",
+		events: "Adding an event",
+		admins: "Inviting an admin",
+	};
+	document.title = `${guide ? titles[guide] : "Help"} · Club admin`;
 	return { leave: async () => {} };
 }

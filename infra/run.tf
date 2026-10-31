@@ -23,6 +23,12 @@ locals {
     BUCKET                = google_storage_bucket.images.name
     CLOUDFLARE_ACCOUNT_ID = var.cloudflare_account_id
     PAGES_PROJECT         = var.pages_project
+
+    # For inviting admins (admins.tf). The API answers 503 on those routes
+    # until these and AUTH0_MGMT_CLIENT_SECRET are all set.
+    AUTH0_MGMT_CLIENT_ID  = auth0_client.admins_manager.client_id
+    AUTH0_ADMIN_ROLE_ID   = auth0_role.club_admin.id
+    AUTH0_ADMIN_CLIENT_ID = var.auth0_admin_client_id # sends the set-password email
   }
 }
 

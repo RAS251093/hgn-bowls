@@ -15,6 +15,7 @@ import (
 
 	"cloud.google.com/go/storage"
 
+	"github.com/ras251093/hgn-bowls/api/admins"
 	"github.com/ras251093/hgn-bowls/api/auth"
 	"github.com/ras251093/hgn-bowls/api/backup"
 	"github.com/ras251093/hgn-bowls/api/config"
@@ -187,13 +188,30 @@ func run(ctx context.Context, logger *slog.Logger) error {
 	bucket := media.NewBucket(gcs.Bucket(cfg.Bucket))
 	postsHandler := posts.NewHandler(posts.NewService(queries), pages, bucket, auth.CallerID, logger)
 
+	// Left nil until Auth0 management is configured; the admins endpoints
+	// then answer 503.
+	var directory admins.Directory
+	if missing := cfg.AdminManagementMissing(); len(missing) > 0 {
+		logger.Warn("inviting admins is off", "missing", missing)
+	} else {
+		directory = admins.NewAuth0(&http.Client{Timeout: 10 * time.Second}, admins.Settings{
+			Domain:       cfg.Auth0Domain,
+			ClientID:     cfg.Auth0MgmtClientID,
+			ClientSecret: cfg.Auth0MgmtClientSecret,
+			RoleID:       cfg.Auth0AdminRoleID,
+			AppClientID:  cfg.Auth0AdminClientID,
+		})
+	}
+
 	handler := newHandler(routes{
 		events:       events.NewHandler(cache, logger),
 		posts:        postsHandler,
 		uploads:      bucket.UploadHandler(logger),
 		latestDeploy: pages.LatestHandler(logger),
 		rebuild:      pages.RebuildHandler(logger),
+		admins:       admins.NewHandler(directory, auth.CallerID, logger),
 		admin:        verifier.RequirePermission("manage:posts"),
+		manageAdmins: verifier.RequirePermission("manage:admins"),
 		build:        buildToken,
 	})
 	handler = withCORS(cfg.AllowedOrigins, handler)

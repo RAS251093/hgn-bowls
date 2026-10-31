@@ -17,6 +17,15 @@ type postRoutes interface {
 	Published(http.ResponseWriter, *http.Request)
 }
 
+// adminRoutes is what the routes need from the admins handlers (*admins.Handler).
+type adminRoutes interface {
+	List(http.ResponseWriter, *http.Request)
+	Invite(http.ResponseWriter, *http.Request)
+	Resend(http.ResponseWriter, *http.Request)
+	Remove(http.ResponseWriter, *http.Request)
+	Restore(http.ResponseWriter, *http.Request)
+}
+
 // routes holds every handler the API serves and the checks guarding them.
 type routes struct {
 	events       http.Handler
@@ -24,9 +33,11 @@ type routes struct {
 	uploads      http.Handler
 	latestDeploy http.Handler
 	rebuild      http.Handler
+	admins       adminRoutes
 
-	admin func(http.Handler) http.Handler // Auth0 token with manage:posts
-	build func(http.Handler) http.Handler // the site build's token
+	admin        func(http.Handler) http.Handler // Auth0 token with manage:posts
+	manageAdmins func(http.Handler) http.Handler // Auth0 token with manage:admins
+	build        func(http.Handler) http.Handler // the site build's token
 }
 
 func newHandler(rt routes) http.Handler {
@@ -50,5 +61,15 @@ func newHandler(rt routes) http.Handler {
 	mux.Handle("GET /api/events", rt.events)
 	mux.Handle("GET /api/posts", rt.build(http.HandlerFunc(rt.posts.Published)))
 	mux.Handle("/api/admin/", rt.admin(admin))
+
+	// Managing admins needs its own permission. These patterns are more
+	// specific than /api/admin/, so they win over it; anything else under
+	// /api/admin/admins still falls to the check above.
+	adminsRoute := func(pattern string, h http.HandlerFunc) { mux.Handle(pattern, rt.manageAdmins(h)) }
+	adminsRoute("GET /api/admin/admins", rt.admins.List)
+	adminsRoute("POST /api/admin/admins", rt.admins.Invite)
+	adminsRoute("POST /api/admin/admins/{id}/invite", rt.admins.Resend)
+	adminsRoute("DELETE /api/admin/admins/{id}", rt.admins.Remove)
+	adminsRoute("PUT /api/admin/admins/{id}", rt.admins.Restore)
 	return mux
 }

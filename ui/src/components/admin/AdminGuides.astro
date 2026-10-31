@@ -1,6 +1,6 @@
 ---
 /**
- * AdminGuides: the two one-page guides for committee members, shown in the
+ * AdminGuides: the one-page guides for committee members, shown in the
  * admin area's Help view (/admin?help). Written for people who've never
  * used the admin before: short steps, the exact words on the buttons.
  */
@@ -76,5 +76,22 @@ const heading = "m-0 text-heading-xl text-primary focus:outline-none";
 
 		<h3>4. Changing or cancelling</h3>
 		<p>Open the event in Google Calendar and change it, or delete it to take it off the website. For a cancellation members should notice, you could keep the event and start its title with "Cancelled:".</p>
+	</div>
+</section>
+
+<section id="guide-admins" data-guide="admins" aria-labelledby="guide-admins-title" class={guide}>
+	<h2 id="guide-admins-title" tabindex="-1" class={heading}>Inviting an admin</h2>
+	<div class={proseClass}>
+		<p>Admins can write and publish news on the website. Only people with permission to manage admins can invite someone or remove their access; if you don't see <strong>Admins</strong> at the top of the page, ask someone who does.</p>
+
+		<h3>1. Invite them</h3>
+		<p>Press <strong>Admins</strong> at the top of the page. Under <strong>Invite an admin</strong>, type their <strong>Name</strong> and <strong>Email address</strong>, then press <strong>Send invitation</strong>.</p>
+
+		<h3>2. They choose a password</h3>
+		<p>They'll get an email from Auth0, the service that signs admins in, with a link to choose a password. If it hasn't arrived after a few minutes, ask them to check their spam folder. You can press <strong>Send the email again</strong> by their name until they've signed in.</p>
+		<p>After they first sign in, they can save a passkey, so next time they can sign in with their fingerprint, face or phone instead of typing the password.</p>
+
+		<h3>3. Removing access</h3>
+		<p>Press <strong>Remove access</strong> by their name. They can't sign in from then on. For a few seconds afterwards you can press <strong>Undo</strong> to give it back. You can't remove your own access.</p>
 	</div>
 </section>

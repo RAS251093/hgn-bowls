@@ -5,11 +5,31 @@ import type { Page } from "@playwright/test";
 // does when its own session cookie is still there.
 
 export const auth0 = "https://auth.test";
-export const accessToken = "stub-access-token";
 export const refreshToken = "stub-refresh-token";
 
 const b64url = (o: object) =>
 	Buffer.from(JSON.stringify(o)).toString("base64url");
+
+/**
+ * An access token shaped like Auth0's, carrying the admin's permissions
+ * (the page reads them to decide what to show). Unsigned: only the stub
+ * API sees it.
+ */
+export function accessTokenFor(permissions: string[]): string {
+	return [
+		b64url({ alg: "RS256", typ: "JWT" }),
+		b64url({
+			iss: `${auth0}/`,
+			sub: "auth0|rob",
+			aud: "https://houghgreenparkbowls.uk/api",
+			permissions,
+		}),
+		"stub-signature",
+	].join(".");
+}
+
+/** The access token an admin who can write posts, and nothing more, gets. */
+export const accessToken = accessTokenFor(["manage:posts"]);
 
 // An ID token the SDK accepts: it checks the claims, not the signature.
 function idToken(nonce: string) {
@@ -37,11 +57,16 @@ export interface Stub {
 	revoked: string[];
 }
 
-/** Stubs Auth0. With signedIn false, /authorize shows a sign-in page instead of returning at once. */
+/**
+ * Stubs Auth0. With signedIn false, /authorize shows a sign-in page instead
+ * of returning at once. The access token grants permissions (by default
+ * just manage:posts).
+ */
 export async function stubAuth0(
 	page: Page,
-	{ signedIn = true } = {},
+	{ signedIn = true, permissions = ["manage:posts"] } = {},
 ): Promise<Stub> {
+	const token = accessTokenFor(permissions);
 	const stub: Stub = { calls: [], revoked: [] };
 	let nonce = "";
 	// Context routes also see the SDK's worker, which makes the token calls.
@@ -77,7 +102,7 @@ export async function stubAuth0(
 				return route.fulfill({
 					headers: cors,
 					json: {
-						access_token: accessToken,
+						access_token: token,
 						refresh_token: refreshToken,
 						id_token: idToken(nonce),
 						token_type: "Bearer",
