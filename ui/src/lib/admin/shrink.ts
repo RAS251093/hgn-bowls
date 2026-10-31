@@ -44,8 +44,7 @@ export async function shrinkPhoto(photo: File): Promise<File> {
 			canvas.toBlob(resolve, "image/webp", quality),
 		);
 		// Some browsers quietly fall back to PNG; only a smaller WebP will do.
-		if (blob?.type !== "image/webp" || blob.size >= photo.size)
-			return photo;
+		if (blob?.type !== "image/webp" || blob.size >= photo.size) return photo;
 		const name = `${photo.name.replace(/\.[^.]+$/, "") || "photo"}.webp`;
 		return new File([blob], name, { type: "image/webp" });
 	} catch {
