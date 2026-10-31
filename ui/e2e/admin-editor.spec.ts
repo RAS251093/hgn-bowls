@@ -531,3 +531,26 @@ test("a cover link that fails to load says so too", async ({ page }) => {
 	);
 	await expect(cover.locator("img")).toBeHidden();
 });
+
+test("a big photo is shrunk to a WebP before it's uploaded", async ({
+	page,
+}) => {
+	await stubAuth0(page);
+	const saves = await stubApi(page);
+	await page.goto("/admin?post=new");
+	await page.getByLabel("Headline").fill("Opening day");
+	await expect.poll(() => saves.length).toBe(1);
+
+	// The site's own 3130 x 1565 photo, 7 MB as it came off the camera.
+	const photo = "src/assets/bowls-game-in-progress.jpg";
+	await page
+		.getByRole("group", { name: "Cover photo" })
+		.getByLabel("Add a cover photo")
+		.setInputFiles(photo);
+	await expect.poll(() => saves.uploads.at(-1)?.contentType).toBe("PUT");
+
+	const asked = saves.uploads[0];
+	expect(asked.contentType).toBe("image/webp");
+	expect(asked.size).toBeLessThan(1024 * 1024);
+	expect(saves.uploads.at(-1)?.size).toBe(asked.size);
+});
