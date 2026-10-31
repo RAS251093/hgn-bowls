@@ -130,9 +130,14 @@ resource "auth0_connection" "admins" {
   }
 }
 
+# The admin page signs in here; the API's management app (admins.tf) needs
+# it enabled to create invited admins on it.
 resource "auth0_connection_clients" "admins" {
-  connection_id   = auth0_connection.admins.id
-  enabled_clients = [auth0_client.admin.client_id]
+  connection_id = auth0_connection.admins.id
+  enabled_clients = [
+    auth0_client.admin.client_id,
+    auth0_client.admins_manager.client_id,
+  ]
 }
 
 # Passkeys need the new Universal Login with the identifier asked first.

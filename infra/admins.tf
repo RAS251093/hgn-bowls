@@ -21,9 +21,11 @@ resource "auth0_role_permissions" "admin_manager" {
   depends_on = [auth0_resource_server_scopes.api]
 }
 
-# The API signs in as this app to call the Management API. It needs no
-# connection enabled: Management API calls aren't connection-scoped, and the
-# set-password email goes out through the admin page's client, which is.
+# The API signs in as this app to call the Management API. Auth0 only lets
+# an app create users on a connection it's enabled for, so it's enabled on
+# admins (auth0.tf); with only the client-credentials grant it still can't
+# sign anyone in. The set-password email goes out through the admin page's
+# client.
 resource "auth0_client" "admins_manager" {
   name            = "HGN Bowls API (manages admins)"
   app_type        = "non_interactive"
