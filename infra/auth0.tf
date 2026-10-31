@@ -65,8 +65,11 @@ resource "auth0_client" "admin" {
   is_first_party  = true
   oidc_conformant = true
 
-  grant_types         = ["authorization_code", "refresh_token"]
-  callbacks           = [for o in local.admin_origins : "${o}/admin"]
+  grant_types = ["authorization_code", "refresh_token"]
+  callbacks   = [for o in local.admin_origins : "${o}/admin"]
+  # Where Auth0 sends people who start elsewhere, such as after choosing a
+  # password from an invitation.
+  initiate_login_uri  = "https://houghgreenparkbowls.uk/admin"
   allowed_logout_urls = [for o in local.admin_origins : "${o}/"]
   web_origins         = local.admin_origins
 
