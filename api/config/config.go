@@ -22,6 +22,10 @@ type Config struct {
 	Auth0Domain   string
 	Auth0Audience string
 	BuildToken    string
+	// Optional: the tenant's custom domain (auth.houghgreenparkbowls.uk).
+	// Tokens issued there name it as their issuer; the tenant's own domain
+	// stays the one for keys and the Management API.
+	Auth0CustomDomain string
 
 	Bucket string
 
@@ -91,6 +95,7 @@ func Load(getenv func(string) string) (Config, error) {
 		TursoToken:          getenv("TURSO_TOKEN"),
 		Auth0Domain:         getenv("AUTH0_DOMAIN"),
 		Auth0Audience:       getenv("AUTH0_AUDIENCE"),
+		Auth0CustomDomain:   getenv("AUTH0_CUSTOM_DOMAIN"),
 		BuildToken:          getenv("BUILD_TOKEN"),
 		Bucket:              getenv("BUCKET"),
 		PagesDeployHook:     getenv("PAGES_DEPLOY_HOOK"),

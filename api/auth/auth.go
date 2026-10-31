@@ -35,7 +35,7 @@ const (
 type Verifier struct {
 	keys     *jwk.Cache
 	jwksURL  string
-	issuer   string
+	issuers  []string
 	audience string
 	keysWait time.Duration
 	logger   *slog.Logger
@@ -45,12 +45,19 @@ type Verifier struct {
 // "https://club.eu.auth0.com/") meant for audience. Signing keys are fetched
 // from the tenant's JWKS with client, which should have a timeout, and
 // refreshed in the background until ctx ends.
-func NewVerifier(ctx context.Context, issuerURL, audience string, client *http.Client, logger *slog.Logger) (*Verifier, error) {
+func NewVerifier(ctx context.Context, issuerURL, audience string, client *http.Client, logger *slog.Logger, opts ...Option) (*Verifier, error) {
 	if issuerURL == "" || audience == "" {
 		return nil, errors.New("auth: issuer and audience are required")
 	}
-	if !strings.HasSuffix(issuerURL, "/") {
-		return nil, errors.New("auth: issuer must end in /, as Auth0 issues it")
+	var o options
+	for _, opt := range opts {
+		opt(&o)
+	}
+	issuers := append([]string{issuerURL}, o.alsoIssuers...)
+	for _, iss := range issuers {
+		if !strings.HasSuffix(iss, "/") {
+			return nil, errors.New("auth: issuer must end in /, as Auth0 issues it")
+		}
 	}
 	// Auth0 always serves its keys here, so there's no need for OpenID discovery.
 	jwksURL, err := url.JoinPath(issuerURL, ".well-known/jwks.json")
@@ -71,7 +78,21 @@ func NewVerifier(ctx context.Context, issuerURL, audience string, client *http.C
 	); err != nil {
 		return nil, fmt.Errorf("auth: register keys: %w", err)
 	}
-	return &Verifier{keys: keys, jwksURL: jwksURL, issuer: issuerURL, audience: audience, keysWait: keysWait, logger: logger}, nil
+	return &Verifier{keys: keys, jwksURL: jwksURL, issuers: issuers, audience: audience, keysWait: keysWait, logger: logger}, nil
+}
+
+type options struct {
+	alsoIssuers []string
+}
+
+// Option changes how a Verifier checks tokens.
+type Option func(*options)
+
+// WithAlsoIssuer accepts tokens issued at issuerURL too, such as the
+// tenant's custom domain ("https://auth.example.org/"). Tokens say which
+// address issued them, and both serve the same keys.
+func WithAlsoIssuer(issuerURL string) Option {
+	return func(o *options) { o.alsoIssuers = append(o.alsoIssuers, issuerURL) }
 }
 
 // errKeysUnavailable means Auth0's signing keys couldn't be fetched.
@@ -95,6 +116,18 @@ func (v *Verifier) keySet(ctx context.Context) (jwk.Set, error) {
 	return set, nil
 }
 
+// errWrongIssuer means a token came from an issuer this API doesn't trust.
+var errWrongIssuer = errors.New("token issuer isn't trusted")
+
+// checkIssuer accepts only the tenant's own issuers.
+func (v *Verifier) checkIssuer(_ context.Context, t jwt.Token) error {
+	iss, ok := t.Issuer()
+	if !ok || !slices.Contains(v.issuers, iss) {
+		return errWrongIssuer
+	}
+	return nil
+}
+
 // verify checks a raw token's signature, issuer, audience and dates.
 func (v *Verifier) verify(ctx context.Context, raw string) (jwt.Token, error) {
 	set, err := v.keySet(ctx)
@@ -106,7 +139,7 @@ func (v *Verifier) verify(ctx context.Context, raw string) (jwt.Token, error) {
 	return jwt.ParseString(raw,
 		jwt.WithKeySet(set),
 		jwt.WithValidate(true),
-		jwt.WithIssuer(v.issuer),
+		jwt.WithValidator(jwt.ValidatorFunc(v.checkIssuer)),
 		jwt.WithAudience(v.audience),
 		jwt.WithAcceptableSkew(clockSkew),
 	)

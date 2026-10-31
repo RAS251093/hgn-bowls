@@ -306,3 +306,45 @@ func TestNewVerifierWantsAuth0StyleIssuer(t *testing.T) {
 		t.Error("expected an error for an issuer without the trailing slash Auth0 puts in tokens")
 	}
 }
+
+// With a custom domain, tokens come from https://auth.<site>/ while the
+// tenant's own address stays the same; both must be accepted, nothing else.
+func TestAlsoAcceptsTheCustomDomainIssuer(t *testing.T) {
+	iss := newIssuer(t)
+	const custom = "https://auth.example.org/"
+	hour := time.Now().Add(time.Hour)
+	tests := []struct {
+		name   string
+		opts   []Option
+		issuer string
+		want   int
+	}{
+		{"tenant issuer", []Option{WithAlsoIssuer(custom)}, iss.url(), http.StatusOK},
+		{"custom domain issuer", []Option{WithAlsoIssuer(custom)}, custom, http.StatusOK},
+		{"custom domain without the option", nil, custom, http.StatusUnauthorized},
+		{"some other issuer", []Option{WithAlsoIssuer(custom)}, "https://evil.example/", http.StatusUnauthorized},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v, err := NewVerifier(t.Context(), iss.url(), testAudience, iss.srv.Client(), slog.New(slog.DiscardHandler), tt.opts...)
+			if err != nil {
+				t.Fatal(err)
+			}
+			h := v.RequirePermission("manage:posts")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+			req := httptest.NewRequestWithContext(t.Context(), "GET", "/api/admin/posts", nil)
+			req.Header.Set("Authorization", "Bearer "+iss.token(t, iss.key, tt.issuer, testAudience, hour, []string{"manage:posts"}))
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, req)
+			if rec.Code != tt.want {
+				t.Errorf("status = %d, want %d", rec.Code, tt.want)
+			}
+		})
+	}
+}
+
+func TestAlsoIssuerMustLookLikeAuth0s(t *testing.T) {
+	iss := newIssuer(t)
+	if _, err := NewVerifier(t.Context(), iss.url(), testAudience, iss.srv.Client(), slog.New(slog.DiscardHandler), WithAlsoIssuer("https://auth.example.org")); err == nil {
+		t.Error("accepted an issuer without the trailing slash Auth0 uses")
+	}
+}
