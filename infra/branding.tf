@@ -160,7 +160,7 @@ resource "auth0_prompt_custom_text" "reset_password" {
 # The email Auth0 sends for "change password" requests: both invitations
 # (api/admins) and "Forgot password?". Auth0 only allows editing templates
 # with its own email provider replaced, so apply this after the SMTP
-# provider (Resend) is set up in the dashboard (see admins.tf).
+# provider (Resend) is set up in the dashboard.
 resource "auth0_email_template" "reset_email" {
   template                = "reset_email"
   from                    = "Hough Green Park Bowls Club <admin@houghgreenparkbowls.uk>"

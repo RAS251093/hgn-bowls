@@ -2,7 +2,8 @@
 # Terraform so they never reach state, for example:
 #   op read op://hgn-bowls/api/turso_token | gcloud secrets versions add turso-token --data-file=-
 # Cloud Run won't start a revision whose secret has no version yet, so a new
-# secret needs a targeted apply first (see admins.tf for an example).
+# secret needs a targeted apply (the secret and its IAM) and a value before
+# the full apply.
 locals {
   api_secrets = {
     TURSO_TOKEN          = "turso-token"
