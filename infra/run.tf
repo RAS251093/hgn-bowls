@@ -20,6 +20,7 @@ locals {
     TURSO_URL             = var.turso_url
     AUTH0_DOMAIN          = var.auth0_domain
     AUTH0_AUDIENCE        = var.auth0_audience
+    AUTH0_CUSTOM_DOMAIN   = auth0_custom_domain.auth.domain
     BUCKET                = google_storage_bucket.images.name
     CLOUDFLARE_ACCOUNT_ID = var.cloudflare_account_id
     PAGES_PROJECT         = var.pages_project
@@ -91,6 +92,8 @@ resource "google_cloud_run_v2_service" "api" {
   depends_on = [
     google_project_service.enabled,
     google_secret_manager_secret_iam_member.api_reads,
+    # Accept tokens from the custom domain only once Auth0 has verified it.
+    auth0_custom_domain_verification.auth,
   ]
 }
 

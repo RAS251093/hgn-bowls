@@ -186,3 +186,21 @@ func TestAdminManagementIsOptional(t *testing.T) {
 		}
 	})
 }
+
+func TestCustomDomainIsOptional(t *testing.T) {
+	base := map[string]string{
+		"CALENDAR_ID": "c", "CALENDAR_API_KEY": "k", "ALLOWED_ORIGINS": "https://example.org",
+		"TURSO_URL": "file:local.db", "AUTH0_DOMAIN": "club.eu.auth0.com", "AUTH0_AUDIENCE": "https://api.example.org",
+		"BUILD_TOKEN": "b", "BUCKET": "img", "PAGES_DEPLOY_HOOK": "https://hook", "CLOUDFLARE_API_TOKEN": "t",
+		"CLOUDFLARE_ACCOUNT_ID": "a", "PAGES_PROJECT": "p",
+	}
+	got, err := Load(func(k string) string { return base[k] })
+	if err != nil || got.Auth0CustomDomain != "" {
+		t.Fatalf("without it: %q, %v; want empty and no error", got.Auth0CustomDomain, err)
+	}
+	base["AUTH0_CUSTOM_DOMAIN"] = "auth.example.org"
+	got, err = Load(func(k string) string { return base[k] })
+	if err != nil || got.Auth0CustomDomain != "auth.example.org" {
+		t.Errorf("with it: %q, %v", got.Auth0CustomDomain, err)
+	}
+}

@@ -168,8 +168,12 @@ func run(ctx context.Context, logger *slog.Logger) error {
 	}
 	defer gcs.Close()
 
+	var verifierOpts []auth.Option
+	if cfg.Auth0CustomDomain != "" {
+		verifierOpts = append(verifierOpts, auth.WithAlsoIssuer("https://"+cfg.Auth0CustomDomain+"/"))
+	}
 	verifier, err := auth.NewVerifier(ctx, "https://"+cfg.Auth0Domain+"/", cfg.Auth0Audience,
-		&http.Client{Timeout: 5 * time.Second}, logger)
+		&http.Client{Timeout: 5 * time.Second}, logger, verifierOpts...)
 	if err != nil {
 		return err
 	}

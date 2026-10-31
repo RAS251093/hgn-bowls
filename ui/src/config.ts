@@ -39,7 +39,9 @@ export const mapLinks = {
 
 /** The Auth0 tenant the admin area signs in with. Tests point it at a stub. */
 export const auth0 = {
-	domain: import.meta.env.PUBLIC_AUTH0_DOMAIN ?? "hgn-bowls.uk.auth0.com",
+	// The tenant's custom domain (infra/custom-domain.tf), so sign-in shows
+	// the club's address. The tenant's own is hgn-bowls.uk.auth0.com.
+	domain: import.meta.env.PUBLIC_AUTH0_DOMAIN ?? "auth.houghgreenparkbowls.uk",
 	clientId:
 		import.meta.env.PUBLIC_AUTH0_CLIENT_ID ??
 		"ghYs1Bt8BnKD6mEA7HTCDSFVS8Lq9P9b",
