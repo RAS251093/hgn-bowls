@@ -29,3 +29,6 @@ playwright-report/
 
 # Lighthouse CI
 .lighthouseci/
+
+# Local design-plugin state (not part of the project)
+.impeccable/
