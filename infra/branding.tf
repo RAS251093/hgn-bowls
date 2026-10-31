@@ -151,14 +151,16 @@ resource "auth0_prompt_custom_text" "reset_password" {
       description = "For the club website's admin area. Use at least 12 characters."
     }
     "reset-password-success" = {
-      title       = "Password saved"
-      description = "You can now sign in to the club website's admin area."
+      eventTitle  = "Password saved"
+      description = "You can now sign in to the admin area at houghgreenparkbowls.uk/admin."
     }
   })
 }
 
 # The email Auth0 sends for "change password" requests: both invitations
-# (api/admins) and "Forgot password?". Auth0 only allows editing templates
+# (api/admins) and "Forgot password?". Choosing where people land afterwards
+# (result_url) needs an enterprise plan, so the success page and the admin
+# app's login URI (auth0.tf) point them to the admin area instead. Auth0 only allows editing templates
 # with its own email provider replaced, so apply this after the SMTP
 # provider (Resend) is set up in the dashboard.
 resource "auth0_email_template" "reset_email" {
@@ -166,7 +168,6 @@ resource "auth0_email_template" "reset_email" {
   from                    = "Hough Green Park Bowls Club <admin@houghgreenparkbowls.uk>"
   subject                 = "Choose your password for the club website"
   syntax                  = "liquid"
-  result_url              = "${local.site}/admin"
   url_lifetime_in_seconds = 604800 # 7 days: invitations sometimes wait a while
   enabled                 = true
   body                    = templatefile("${path.module}/emails/reset-email.html", { token = local.token, site = local.site })
