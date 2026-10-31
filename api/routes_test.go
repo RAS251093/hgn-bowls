@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -40,6 +41,22 @@ func (fakePosts) Published(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte("posts.Published"))
 }
 
+type fakeAdmins struct{}
+
+func (fakeAdmins) List(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("admins.List")) }
+func (fakeAdmins) Invite(w http.ResponseWriter, r *http.Request) {
+	_, _ = w.Write([]byte("admins.Invite"))
+}
+func (fakeAdmins) Resend(w http.ResponseWriter, r *http.Request) {
+	_, _ = w.Write([]byte("admins.Resend " + r.PathValue("id")))
+}
+func (fakeAdmins) Remove(w http.ResponseWriter, r *http.Request) {
+	_, _ = w.Write([]byte("admins.Remove " + r.PathValue("id")))
+}
+func (fakeAdmins) Restore(w http.ResponseWriter, r *http.Request) {
+	_, _ = w.Write([]byte("admins.Restore " + r.PathValue("id")))
+}
+
 // gate lets a request through only with the given header, standing in for
 // the real token checks.
 func gate(header string) func(http.Handler) http.Handler {
@@ -54,6 +71,44 @@ func gate(header string) func(http.Handler) http.Handler {
 	}
 }
 
+// permission stands in for Verifier.RequirePermission: X-Permissions lists
+// the caller's permissions. None at all gets 401, the wrong ones 403.
+func permission(perm string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			have := r.Header.Get("X-Permissions")
+			if have == "" {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			if !slices.Contains(strings.Split(have, " "), perm) {
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// Credentials the route tests send: the build token, or an Auth0 token
+// carrying the named permissions.
+const (
+	buildToken = "build"
+	postsPerm  = "manage:posts"
+	adminsPerm = "manage:admins"
+	bothPerms  = "manage:posts manage:admins"
+)
+
+func withCredentials(r *http.Request, as string) {
+	switch as {
+	case "":
+	case buildToken:
+		r.Header.Set("X-Build", "yes")
+	default:
+		r.Header.Set("X-Permissions", as)
+	}
+}
+
 func testRoutes() http.Handler {
 	return newHandler(routes{
 		events:       named("events"),
@@ -61,7 +116,9 @@ func testRoutes() http.Handler {
 		uploads:      named("uploads"),
 		latestDeploy: named("deploys.Latest"),
 		rebuild:      named("rebuild"),
-		admin:        gate("X-Admin"),
+		admins:       fakeAdmins{},
+		admin:        permission("manage:posts"),
+		manageAdmins: permission("manage:admins"),
 		build:        gate("X-Build"),
 	})
 }
@@ -70,7 +127,7 @@ func TestRoutes(t *testing.T) {
 	h := testRoutes()
 	tests := []struct {
 		method, path string
-		as           string // header that passes the gate, if any
+		as           string // credentials sent, if any
 		want         int
 		wantBody     string
 	}{
@@ -80,29 +137,47 @@ func TestRoutes(t *testing.T) {
 		{"GET", "/nope", "", 404, ""},
 		{"GET", "/api/events", "", 200, "events"},
 
-		{"GET", "/api/posts", "X-Build", 200, "posts.Published"},
-		{"GET", "/api/admin/posts", "X-Admin", 200, "posts.List"},
-		{"POST", "/api/admin/posts", "X-Admin", 200, "posts.Create"},
-		{"GET", "/api/admin/posts/p1", "X-Admin", 200, "posts.Get p1"},
-		{"PUT", "/api/admin/posts/p1", "X-Admin", 200, "posts.Update p1"},
-		{"DELETE", "/api/admin/posts/p1", "X-Admin", 200, "posts.Delete p1"},
-		{"POST", "/api/admin/posts/p1/publish", "X-Admin", 200, "posts.Publish p1"},
-		{"POST", "/api/admin/posts/p1/unpublish", "X-Admin", 200, "posts.Unpublish p1"},
-		{"POST", "/api/admin/posts/p1/restore", "X-Admin", 200, "posts.Restore p1"},
-		{"POST", "/api/admin/uploads", "X-Admin", 200, "uploads"},
-		{"GET", "/api/admin/deploys/latest", "X-Admin", 200, "deploys.Latest"},
-		{"POST", "/api/admin/rebuild", "X-Admin", 200, "rebuild"},
+		{"GET", "/api/posts", buildToken, 200, "posts.Published"},
+		{"GET", "/api/admin/posts", postsPerm, 200, "posts.List"},
+		{"POST", "/api/admin/posts", postsPerm, 200, "posts.Create"},
+		{"GET", "/api/admin/posts/p1", postsPerm, 200, "posts.Get p1"},
+		{"PUT", "/api/admin/posts/p1", postsPerm, 200, "posts.Update p1"},
+		{"DELETE", "/api/admin/posts/p1", postsPerm, 200, "posts.Delete p1"},
+		{"POST", "/api/admin/posts/p1/publish", postsPerm, 200, "posts.Publish p1"},
+		{"POST", "/api/admin/posts/p1/unpublish", postsPerm, 200, "posts.Unpublish p1"},
+		{"POST", "/api/admin/posts/p1/restore", postsPerm, 200, "posts.Restore p1"},
+		{"POST", "/api/admin/uploads", postsPerm, 200, "uploads"},
+		{"GET", "/api/admin/deploys/latest", postsPerm, 200, "deploys.Latest"},
+		{"POST", "/api/admin/rebuild", postsPerm, 200, "rebuild"},
+
+		{"GET", "/api/admin/admins", adminsPerm, 200, "admins.List"},
+		{"POST", "/api/admin/admins", adminsPerm, 200, "admins.Invite"},
+		{"POST", "/api/admin/admins/auth0%7C1/invite", adminsPerm, 200, "admins.Resend auth0|1"},
+		{"DELETE", "/api/admin/admins/auth0%7C1", adminsPerm, 200, "admins.Remove auth0|1"},
+		{"PUT", "/api/admin/admins/auth0%7C1", adminsPerm, 200, "admins.Restore auth0|1"},
+		{"GET", "/api/admin/admins", bothPerms, 200, "admins.List"},
+		{"GET", "/api/admin/posts", bothPerms, 200, "posts.List"},
+
+		// Managing posts doesn't let you manage admins, nor the other way round.
+		{"GET", "/api/admin/admins", postsPerm, 403, ""},
+		{"POST", "/api/admin/admins", postsPerm, 403, ""},
+		{"POST", "/api/admin/admins/auth0%7C1/invite", postsPerm, 403, ""},
+		{"DELETE", "/api/admin/admins/auth0%7C1", postsPerm, 403, ""},
+		{"PUT", "/api/admin/admins/auth0%7C1", postsPerm, 403, ""},
+		{"GET", "/api/admin/posts", adminsPerm, 403, ""},
+		{"POST", "/api/admin/posts/p1/publish", adminsPerm, 403, ""},
+		{"POST", "/api/admin/uploads", adminsPerm, 403, ""},
+		{"POST", "/api/admin/rebuild", adminsPerm, 403, ""},
 
 		// The build token must not open the admin area, nor an admin token the build list.
-		{"GET", "/api/admin/posts", "X-Build", 401, ""},
-		{"GET", "/api/posts", "X-Admin", 401, ""},
+		{"GET", "/api/admin/posts", buildToken, 401, ""},
+		{"GET", "/api/admin/admins", buildToken, 401, ""},
+		{"GET", "/api/posts", postsPerm, 401, ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.method+" "+tt.path+" as "+tt.as, func(t *testing.T) {
 			req := httptest.NewRequestWithContext(t.Context(), tt.method, tt.path, nil)
-			if tt.as != "" {
-				req.Header.Set(tt.as, "yes")
-			}
+			withCredentials(req, tt.as)
 			rec := httptest.NewRecorder()
 			h.ServeHTTP(rec, req)
 			if rec.Code != tt.want {
@@ -132,11 +207,16 @@ func TestProtectedRoutesNeedCredentials(t *testing.T) {
 		{"POST", "/api/admin/uploads"},
 		{"GET", "/api/admin/deploys/latest"},
 		{"POST", "/api/admin/rebuild"},
+		{"GET", "/api/admin/admins"},
+		{"POST", "/api/admin/admins"},
+		{"POST", "/api/admin/admins/a1/invite"},
+		{"DELETE", "/api/admin/admins/a1"},
+		{"PUT", "/api/admin/admins/a1"},
 		{"GET", "/api/admin/anything-new"},
 	} {
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), r.method, r.path, nil))
-		if rec.Code != http.StatusUnauthorized || strings.Contains(rec.Body.String(), "posts.") {
+		if rec.Code != http.StatusUnauthorized || strings.Contains(rec.Body.String(), ".") {
 			t.Errorf("%s %s without credentials: %d %q, want 401", r.method, r.path, rec.Code, rec.Body)
 		}
 	}

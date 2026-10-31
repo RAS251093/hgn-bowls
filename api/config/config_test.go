@@ -122,3 +122,67 @@ func TestLoadDoesNotLeakSecretsInErrors(t *testing.T) {
 		t.Errorf("error %q contains a secret value", err)
 	}
 }
+
+func TestAdminManagementIsOptional(t *testing.T) {
+	base := map[string]string{
+		"CALENDAR_ID": "c", "CALENDAR_API_KEY": "k", "ALLOWED_ORIGINS": "https://example.org",
+		"TURSO_URL": "file:local.db", "AUTH0_DOMAIN": "club.eu.auth0.com", "AUTH0_AUDIENCE": "https://api.example.org",
+		"BUILD_TOKEN": "b", "BUCKET": "img", "PAGES_DEPLOY_HOOK": "https://hook", "CLOUDFLARE_API_TOKEN": "t",
+		"CLOUDFLARE_ACCOUNT_ID": "a", "PAGES_PROJECT": "p",
+	}
+	admin := map[string]string{
+		"AUTH0_MGMT_CLIENT_ID":     "mgmt-id",
+		"AUTH0_MGMT_CLIENT_SECRET": "mgmt-secret",
+		"AUTH0_ADMIN_ROLE_ID":      "rol_admin",
+		"AUTH0_ADMIN_CLIENT_ID":    "spa-id",
+	}
+	allAdmin := []string{"AUTH0_MGMT_CLIENT_ID", "AUTH0_MGMT_CLIENT_SECRET", "AUTH0_ADMIN_ROLE_ID", "AUTH0_ADMIN_CLIENT_ID"}
+
+	t.Run("none set: starts, with inviting off", func(t *testing.T) {
+		got, err := Load(env(base))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if diff := cmp.Diff(allAdmin, got.AdminManagementMissing()); diff != "" {
+			t.Errorf("missing (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("all set: inviting on", func(t *testing.T) {
+		m := map[string]string{}
+		for k, v := range base {
+			m[k] = v
+		}
+		for k, v := range admin {
+			m[k] = v
+		}
+		got, err := Load(env(m))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if missing := got.AdminManagementMissing(); len(missing) != 0 {
+			t.Errorf("missing = %v, want none", missing)
+		}
+		want := [4]string{"mgmt-id", "mgmt-secret", "rol_admin", "spa-id"}
+		if g := [4]string{got.Auth0MgmtClientID, got.Auth0MgmtClientSecret, got.Auth0AdminRoleID, got.Auth0AdminClientID}; g != want {
+			t.Errorf("admin settings = %v, want %v", g, want)
+		}
+	})
+
+	t.Run("some set: still off, naming the rest", func(t *testing.T) {
+		m := map[string]string{}
+		for k, v := range base {
+			m[k] = v
+		}
+		m["AUTH0_MGMT_CLIENT_ID"] = "mgmt-id"
+		m["AUTH0_ADMIN_ROLE_ID"] = "rol_admin"
+		got, err := Load(env(m))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		want := []string{"AUTH0_MGMT_CLIENT_SECRET", "AUTH0_ADMIN_CLIENT_ID"}
+		if diff := cmp.Diff(want, got.AdminManagementMissing()); diff != "" {
+			t.Errorf("missing (-want +got):\n%s", diff)
+		}
+	})
+}

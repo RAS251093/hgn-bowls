@@ -29,6 +29,30 @@ type Config struct {
 	CloudflareAPIToken  string
 	CloudflareAccountID string
 	PagesProject        string
+
+	// Optional: inviting admins is off until all four are set, so the API
+	// can be deployed before the Auth0 management app and its secret exist.
+	Auth0MgmtClientID     string // machine-to-machine app for the Management API
+	Auth0MgmtClientSecret string
+	Auth0AdminRoleID      string // the club-admin role
+	Auth0AdminClientID    string // the admin area's own app, for password emails
+}
+
+// AdminManagementMissing names the unset variables that inviting admins
+// needs. It's empty when inviting admins is on.
+func (c Config) AdminManagementMissing() []string {
+	var missing []string
+	for _, v := range []struct{ name, value string }{
+		{"AUTH0_MGMT_CLIENT_ID", c.Auth0MgmtClientID},
+		{"AUTH0_MGMT_CLIENT_SECRET", c.Auth0MgmtClientSecret},
+		{"AUTH0_ADMIN_ROLE_ID", c.Auth0AdminRoleID},
+		{"AUTH0_ADMIN_CLIENT_ID", c.Auth0AdminClientID},
+	} {
+		if v.value == "" {
+			missing = append(missing, v.name)
+		}
+	}
+	return missing
 }
 
 // required lists the variables the API cannot start without.
@@ -73,6 +97,11 @@ func Load(getenv func(string) string) (Config, error) {
 		CloudflareAPIToken:  getenv("CLOUDFLARE_API_TOKEN"),
 		CloudflareAccountID: getenv("CLOUDFLARE_ACCOUNT_ID"),
 		PagesProject:        getenv("PAGES_PROJECT"),
+
+		Auth0MgmtClientID:     getenv("AUTH0_MGMT_CLIENT_ID"),
+		Auth0MgmtClientSecret: getenv("AUTH0_MGMT_CLIENT_SECRET"),
+		Auth0AdminRoleID:      getenv("AUTH0_ADMIN_ROLE_ID"),
+		Auth0AdminClientID:    getenv("AUTH0_ADMIN_CLIENT_ID"),
 	}, nil
 }
 

@@ -1,0 +1,6 @@
+# Cloudflare Pages response headers.
+
+# Auth0's sign-in pages use the site's font (infra/branding.tf), so other
+# origins may load it. The fonts are public anyway.
+/fonts/*
+  Access-Control-Allow-Origin: *

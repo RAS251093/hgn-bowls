@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import {
 	type AdminPost,
+	adminsHref,
+	dayOrTime,
 	editHref,
 	helpHref,
 	metaLine,
@@ -77,6 +79,30 @@ describe("metaLine", () => {
 	});
 });
 
+describe("dayOrTime", () => {
+	test("today is the time on the 24-hour clock, in London", () => {
+		assert.equal(dayOrTime(new Date("2026-10-30T08:05:00Z"), now), "08:05");
+		assert.equal(
+			dayOrTime(
+				new Date("2026-07-14T23:30:00Z"),
+				new Date("2026-07-15T09:00:00Z"),
+			),
+			"00:30",
+		);
+	});
+
+	test("before today is the day, with the year when it isn't this one", () => {
+		assert.equal(
+			dayOrTime(new Date("2026-10-29T23:59:00Z"), now),
+			"29 October",
+		);
+		assert.equal(
+			dayOrTime(new Date("2025-03-02T12:00:00Z"), now),
+			"2 March 2025",
+		);
+	});
+});
+
 describe("editHref", () => {
 	test("links to the editor for that post, on the one admin page", () => {
 		assert.equal(editHref("01ABC"), "/admin?post=01ABC");
@@ -107,6 +133,20 @@ describe("routeOf", () => {
 	});
 });
 
+describe("admins", () => {
+	test("?admins opens the admins", () => {
+		assert.deepEqual(routeOf("?admins"), { view: "admins" });
+		assert.deepEqual(routeOf("?admins="), { view: "admins" });
+	});
+
+	test("the link reads back as the admins", () => {
+		assert.equal(adminsHref(), "/admin?admins");
+		assert.deepEqual(routeOf(new URL(adminsHref(), "https://x").search), {
+			view: "admins",
+		});
+	});
+});
+
 describe("help", () => {
 	test("?help opens the guides, ?help=<guide> one of them", () => {
 		assert.deepEqual(routeOf("?help"), { view: "help", guide: null });
@@ -115,6 +155,10 @@ describe("help", () => {
 			guide: "events",
 		});
 		assert.deepEqual(routeOf("?help=posts"), { view: "help", guide: "posts" });
+		assert.deepEqual(routeOf("?help=admins"), {
+			view: "help",
+			guide: "admins",
+		});
 		assert.deepEqual(routeOf("?help=nonsense"), { view: "help", guide: null });
 	});
 

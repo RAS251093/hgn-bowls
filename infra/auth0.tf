@@ -30,6 +30,11 @@ resource "auth0_resource_server_scopes" "api" {
     name        = "manage:posts"
     description = "Write, publish and delete news posts"
   }
+
+  scopes {
+    name        = "manage:admins"
+    description = "Invite admins and remove their access"
+  }
 }
 
 resource "auth0_role" "club_admin" {

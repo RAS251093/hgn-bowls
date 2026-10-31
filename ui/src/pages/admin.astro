@@ -1,7 +1,7 @@
 ---
 import { getImage } from "astro:assets";
-// The admin area: one page with two views, the list of news posts and the
-// editor (?post=<id>). Moving between them never reloads the page, because
+// The admin area: one page with views for the list of news posts, the
+// editor (?post=<id>), the guides (?help) and the admins (?admins). Moving between them never reloads the page, because
 // tokens live in memory and a reload means a trip through Auth0.
 // Everything happens in the browser: the page signs the admin in, then
 // reads and saves posts through the API with their token. The HTML is the
@@ -20,11 +20,13 @@ import {
 	List,
 	ListOrdered,
 	LogOut,
+	Mail,
 	Pencil,
 	Plus,
 	Send,
 	TextQuote,
 	Trash,
+	UserMinus,
 } from "@lucide/astro";
 import defaultCover from "../assets/two-crown-green-bowls.jpg";
 import AdminGuides from "../components/admin/AdminGuides.astro";
@@ -37,7 +39,7 @@ import StatusBadge from "../components/ui/StatusBadge.astro";
 import UndoToast from "../components/ui/UndoToast.astro";
 import AdminLayout from "../layouts/AdminLayout.astro";
 import { limits } from "../lib/admin/draft";
-import { editHref, helpHref } from "../lib/admin/posts";
+import { adminsHref, editHref, helpHref } from "../lib/admin/posts";
 
 // The club photo the site shows for a post without a cover, small enough
 // for the list's thumbnails (twice their size, for sharp screens).
@@ -81,6 +83,7 @@ const tool =
 <AdminLayout title="News posts">
 	<div slot="header" class="flex flex-wrap items-center gap-x-6 gap-y-2">
 		<span data-signed-in-as hidden class="text-body-sm text-primary-muted-foreground"></span>
+		<a data-admins-link hidden href={adminsHref()} class="inline-flex min-h-11 items-center text-body-sm text-primary-foreground underline">Admins</a>
 		<a href={helpHref()} class="inline-flex min-h-11 items-center text-body-sm text-primary-foreground underline">Help</a>
 		<a href="/" class="inline-flex min-h-11 items-center text-body-sm text-primary-foreground underline">View website</a>
 		<Button variant="outline" size="sm" data-sign-out hidden>
@@ -270,14 +273,91 @@ const tool =
 		<nav aria-label="Guides" class="flex flex-wrap gap-x-6 gap-y-2">
 			<a href={helpHref("posts")} class="inline-flex min-h-11 items-center text-label text-primary underline">Writing a news post</a>
 			<a href={helpHref("events")} class="inline-flex min-h-11 items-center text-label text-primary underline">Adding an event</a>
+			<a href={helpHref("admins")} class="inline-flex min-h-11 items-center text-label text-primary underline">Inviting an admin</a>
 		</nav>
 		<AdminGuides calendarHref={googleCalendar} />
+	</section>
+
+	<!-- The admins: who can sign in, and inviting more (for those allowed to). -->
+	<section data-view="admins" hidden class="flex max-w-measure flex-col gap-6">
+		<div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+			<a href="/admin" class="inline-flex min-h-11 items-center gap-2 text-label text-primary underline">
+				<ArrowLeft size={20} aria-hidden="true" />All posts
+			</a>
+			<a href={helpHref("admins")} class="inline-flex min-h-11 items-center gap-2 text-label text-primary underline">
+				<CircleHelp size={20} aria-hidden="true" />How to invite an admin
+			</a>
+		</div>
+		<div class="flex flex-col gap-2">
+			<h1 class="m-0 text-heading-xl text-primary">Admins</h1>
+			<p class="m-0 text-body-md text-muted-foreground">Admins can write and publish news on the website. Invite someone and we'll email them a link to choose a password.</p>
+		</div>
+
+		<div data-admins-denied hidden>
+			<Callout variant="error">You don't have permission to manage admins.</Callout>
+		</div>
+		<div data-admins-unavailable hidden>
+			<Callout variant="error">Inviting admins isn't set up yet.</Callout>
+		</div>
+		<div data-admins-error hidden>
+			<Callout variant="error">We couldn't load the admins. Check your connection, then reload the page.</Callout>
+		</div>
+
+		<div data-admins-loading>
+			<p role="status" class="sr-only">Loading the admins</p>
+			<!-- Placeholder rows the shape of an admin's row, still, as nothing on the site loops. -->
+			<ul aria-hidden="true" class="m-0 flex list-none flex-col gap-3 p-0">
+				{
+					["w-2/5", "w-1/3", "w-1/2"].map((width) => (
+						<li class="flex flex-col gap-2 rounded-lg border border-border bg-card px-5 py-4">
+							<div class:list={["h-7 rounded-sm bg-secondary", width]} />
+							<div class="h-6 w-48 rounded-sm bg-secondary" />
+						</li>
+					))
+				}
+			</ul>
+		</div>
+
+		<div data-admins-ready hidden class="flex flex-col gap-8">
+			<form data-invite-form novalidate aria-labelledby="invite-title" class="flex flex-col gap-4 rounded-lg border border-border bg-card p-6">
+				<h2 id="invite-title" class="m-0 text-heading-md text-primary">Invite an admin</h2>
+				<Field id="invite-name" name="name" label="Name" autocomplete="off" liveErrors />
+				<Field id="invite-email" name="email" label="Email address" type="email" inputmode="email" autocomplete="off" spellcheck="false" liveErrors />
+				<div class="flex">
+					<Button type="submit" data-invite-send><Mail aria-hidden="true" />Send invitation</Button>
+				</div>
+			</form>
+			<!-- How the last invitation went. -->
+			<p data-invite-status role="status" hidden class="m-0 rounded-md px-6 py-5 data-[tone=sent]:bg-affirmative data-[tone=sent]:text-affirmative-foreground data-[tone=failed]:bg-warning data-[tone=failed]:text-warning-foreground"></p>
+			<div data-admins-alert hidden>
+				<Callout variant="error"><span data-admins-alert-message></span></Callout>
+			</div>
+			<div class="flex flex-col gap-4">
+				<h2 class="m-0 text-heading-md text-primary">Who can sign in</h2>
+				<ul data-admins aria-label="Admins" tabindex="-1" class="m-0 flex list-none flex-col gap-3 p-0 focus:outline-none"></ul>
+			</div>
+		</div>
 	</section>
 
 	<!-- One toast at a time, bottom-left (UndoToast). -->
 	<div data-toast-slot class="pointer-events-none fixed right-4 bottom-4 left-4 z-20 [&>*]:pointer-events-auto"></div>
 	<template data-undo-toast><UndoToast message="Post deleted" /></template>
 
+	<template data-admin-row>
+		<li class="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-card px-5 py-4">
+			<div class="flex min-w-0 flex-col gap-1">
+				<span data-admin-name class="text-heading-md text-primary"></span>
+				<span data-admin-email class="text-body-sm wrap-anywhere text-foreground"></span>
+				<span data-admin-status class="text-body-sm text-muted-foreground"></span>
+			</div>
+			<div class="flex flex-wrap items-center gap-3">
+				<p data-admin-note role="status" class="m-0 text-body-sm text-muted-foreground empty:hidden"></p>
+				<Button variant="outline" size="sm" data-resend hidden><Send aria-hidden="true" />Send the email again</Button>
+				<Button variant="destructive" size="sm" data-remove hidden><UserMinus aria-hidden="true" />Remove access</Button>
+				<span data-you hidden class="text-label text-muted-foreground">You</span>
+			</div>
+		</li>
+	</template>
 	<template data-row><PostRow title="" status="draft" meta="" editHref="" /></template>
 	<template data-badge="draft"><StatusBadge status="draft" /></template>
 	<template data-badge="published"><StatusBadge status="published" /></template>
